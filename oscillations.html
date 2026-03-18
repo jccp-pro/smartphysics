@@ -1,0 +1,1168 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Oscillations - Complete Analysis</title>
+    <style>
+        body {
+            margin: 0;
+            padding: 20px;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #1e3c72 0%, #2a5298 100%);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            min-height: 100vh;
+        }
+        
+        .container {
+            background: white;
+            border-radius: 20px;
+            padding: 30px;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+            max-width: 1400px;
+            width: 100%;
+        }
+        
+        h1 {
+            text-align: center;
+            color: #2c3e50;
+            margin-bottom: 10px;
+            font-size: 32px;
+        }
+        
+        .subtitle {
+            text-align: center;
+            color: #7f8c8d;
+            margin-bottom: 20px;
+            font-size: 16px;
+        }
+        
+        .parameters {
+            background: #ecf0f1;
+            padding: 15px;
+            border-radius: 10px;
+            margin-bottom: 20px;
+            text-align: center;
+        }
+        
+        .parameters h3 {
+            margin: 0 0 10px 0;
+            color: #34495e;
+        }
+        
+        .param-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 10px;
+            margin-top: 10px;
+        }
+        
+        .param-item {
+            background: white;
+            padding: 10px;
+            border-radius: 8px;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+        }
+        
+        .input-section {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 15px;
+            margin-bottom: 15px;
+        }
+        
+        .input-group {
+            display: flex;
+            flex-direction: column;
+            gap: 5px;
+        }
+        
+        .input-group label {
+            font-size: 14px;
+            font-weight: bold;
+            color: #34495e;
+        }
+        
+        .input-group input[type="range"] {
+            padding: 10px;
+            font-size: 16px;
+        }
+        
+        .input-group input[type="number"] {
+            padding: 10px;
+            font-size: 16px;
+            border: 2px solid #bdc3c7;
+            border-radius: 8px;
+            transition: border-color 0.3s;
+        }
+        
+        .input-group input:focus {
+            outline: none;
+            border-color: #3498db;
+        }
+        
+        .info-box {
+            background: #d1ecf1;
+            border: 1px solid #bee5eb;
+            padding: 12px;
+            border-radius: 8px;
+            margin-top: 15px;
+            font-size: 13px;
+            color: #0c5460;
+        }
+        
+        .info-box p {
+            margin: 5px 0;
+        }
+        
+        .controls {
+            display: flex;
+            gap: 15px;
+            justify-content: center;
+            margin-top: 20px;
+            flex-wrap: wrap;
+        }
+        
+        button {
+            padding: 12px 24px;
+            font-size: 16px;
+            font-weight: bold;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+        
+        .btn-play {
+            background: #3498db;
+            color: white;
+        }
+        
+        .btn-play:hover {
+            background: #2980b9;
+            transform: translateY(-2px);
+        }
+        
+        .btn-reset {
+            background: #95a5a6;
+            color: white;
+        }
+        
+        .btn-reset:hover {
+            background: #7f8c8d;
+            transform: translateY(-2px);
+        }
+        
+        .time-display {
+            padding: 12px 24px;
+            background: #ecf0f1;
+            border-radius: 8px;
+            font-family: 'Courier New', monospace;
+            font-size: 18px;
+            font-weight: bold;
+            color: #2c3e50;
+        }
+        
+        .visualization-grid {
+            display: grid;
+            grid-template-columns: 2fr 1fr;
+            gap: 20px;
+            margin-top: 20px;
+        }
+        
+        @media (max-width: 1024px) {
+            .visualization-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+        
+        .chart-container {
+            background: white;
+            padding: 20px;
+            border-radius: 10px;
+            box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+        }
+        
+        h2 {
+            color: #2c3e50;
+            margin-top: 0;
+            margin-bottom: 15px;
+        }
+        
+        canvas {
+            border: 1px solid #dee2e6;
+            border-radius: 8px;
+            background: white;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Oscillations Visualization</h1>
+        <div class="subtitle">Interactive analysis of harmonic motion: free, damped, and forced oscillations</div>
+        
+        <div class="parameters">
+            <h3>System Parameters</h3>
+            <div class="param-grid">
+                <div class="param-item">
+                    <strong>ωₙ:</strong> <span id="omega_n_display">0.00</span> rad/s<br>
+                    <small>Natural Frequency</small>
+                </div>
+                <div class="param-item">
+                    <strong>ζ:</strong> <span id="zeta_display">0.000</span><br>
+                    <small id="damping_type">Damping Ratio</small>
+                </div>
+                <div class="param-item">
+                    <strong>ωd:</strong> <span id="omega_d_display">0.00</span> rad/s<br>
+                    <small>Damped Frequency</small>
+                </div>
+                <div class="param-item">
+                    <strong>τ:</strong> <span id="tau_display">0.00</span> s<br>
+                    <small>Relaxation Time (1/γ)</small>
+                </div>
+                <div class="param-item">
+                    <strong>c:</strong> <span id="c_display">0.00</span> Ns/m<br>
+                    <small>Damping Coefficient</small>
+                </div>
+                <div class="param-item">
+                    <strong>Q:</strong> <span id="q_display">0.00</span><br>
+                    <small>Quality Factor</small>
+                </div>
+                <div class="param-item">
+                    <strong>Δω:</strong> <span id="bandwidth_display">0.00</span> rad/s<br>
+                    <small>Bandwidth</small>
+                </div>
+            </div>
+        </div>
+        
+        <div class="input-section">
+            <div class="input-group">
+                <label for="mass">Mass (m): <span id="mass_value">1.00</span> kg</label>
+                <input type="range" id="mass" min="0.1" max="5.0" step="0.01" value="1.0">
+            </div>
+            
+            <div class="input-group">
+                <label for="spring">Spring Constant (k): <span id="spring_value">10.00</span> N/m</label>
+                <input type="range" id="spring" min="1" max="50" step="0.1" value="10.0">
+            </div>
+            
+            <div class="input-group">
+                <label for="gamma">Damping Constant (γ): <span id="gamma_value">0.25</span> s⁻¹</label>
+                <input type="range" id="gamma" min="0" max="2.5" step="0.01" value="0.25">
+            </div>
+            
+            <div class="input-group">
+                <label for="forcingFreq">Force Frequency (ω): <span id="forcingFreq_value">3.00</span> rad/s</label>
+                <input type="range" id="forcingFreq" min="0.5" max="15" step="0.01" value="3.0">
+            </div>
+            
+            <div class="input-group">
+                <label for="forcingAmp">Force Amplitude (F₀): <span id="forcingAmp_value">0.0</span> N</label>
+                <input type="range" id="forcingAmp" min="0" max="10" step="0.1" value="0">
+            </div>
+            
+            <div class="input-group">
+                <label for="phaseConstant">Force Phase Constant (φ₀): <span id="phaseConstant_value">0.00</span> rad</label>
+                <input type="range" id="phaseConstant" min="0" max="6.28" step="0.1" value="0">
+            </div>
+            
+            <div class="input-group">
+                <label for="totalTime">Total Time: <span id="totalTime_value">15.0</span> s</label>
+                <input type="number" id="totalTime" min="5" max="100" step="1" value="15">
+            </div>
+            
+            <div class="input-group">
+                <label for="x0">Initial Position (x₀): <span id="x0_value">1.00</span> m</label>
+                <input type="range" id="x0" min="-2" max="2" step="0.01" value="1.0">
+            </div>
+            
+            <div class="input-group">
+                <label for="v0">Initial Velocity (v₀): <span id="v0_value">0.00</span> m/s</label>
+                <input type="range" id="v0" min="-5" max="5" step="0.01" value="0">
+            </div>
+        </div>
+        
+        <div style="background: #e3f2fd; border: 2px solid #2196f3; padding: 12px; border-radius: 8px; margin-bottom: 15px; text-align: center;">
+            <p style="margin: 0; font-size: 14px; color: #1565c0;">
+                <strong>💡 Tip:</strong> Initial conditions x₀ and v₀ determine the constants A, B, D, φ in the solutions (shown in <span style="color: blue;">blue</span> in your reference).
+            </p>
+        </div>
+        
+        <div class="info-box" id="equationBox">
+            <p id="motionType" style="font-weight: bold; font-size: 15px; margin-bottom: 8px;"></p>
+            <p id="equationOfMotion"></p>
+            <p id="solutionForm"></p>
+            <p id="additionalInfo" style="font-size: 12px; margin-top: 8px;"></p>
+        </div>
+        
+        <div class="controls">
+            <button class="btn-play" id="playBtn">Play</button>
+            <button class="btn-reset" id="resetBtn">Reset</button>
+            <span class="time-display">t = <span id="timeDisplay">0.00</span> s</span>
+        </div>
+        
+        <div class="visualization-grid">
+            <div class="chart-container">
+                <h2>Displacement vs Time</h2>
+                <canvas id="timePlot" width="800" height="500"></canvas>
+            </div>
+            
+            <div class="chart-container">
+                <h2>Spring-Mass-Damper</h2>
+                <canvas id="springMass" width="280" height="480"></canvas>
+            </div>
+        </div>
+        
+        <div class="chart-container" style="margin-top: 20px;">
+            <h2>Frequency Response</h2>
+            <canvas id="frequencyPlot" width="1200" height="400"></canvas>
+            
+            <div style="background: #fff3cd; border: 1px solid #ffeaa7; padding: 15px; border-radius: 8px; margin-top: 15px;">
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px;">
+                    <div>
+                        <p style="margin: 5px 0; font-size: 14px;"><strong>Quality Factor:</strong> Q = ω₀/(2γ) = <span id="freq_q_factor">0.00</span></p>
+                        <p style="margin: 5px 0; font-size: 13px; color: #856404;">Higher Q → sharper resonance peak, lower damping</p>
+                    </div>
+                    <div>
+                        <p style="margin: 5px 0; font-size: 14px;"><strong>Bandwidth:</strong> Δω = 2γ = <span id="freq_bandwidth">0.00</span> rad/s</p>
+                        <p style="margin: 5px 0; font-size: 13px; color: #856404;">Frequency range where amplitude > peak/√2</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <script>
+        // Global variables
+        let mass = 1.0;
+        let springConstant = 10.0;
+        let gamma = 0.25;
+        let forcingFreq = 3.0;
+        let forcingAmp = 0.0;  // Start with no forcing to show free oscillation
+        let phaseConstant = 0.0;
+        let totalTime = 15.0;
+        let x0 = 1.0;  // Initial position
+        let v0 = 0.0;  // Initial velocity
+        let time = 0;
+        let isPlaying = false;
+        let animationId = null;
+        
+        // Canvas contexts
+        const timeCtx = document.getElementById('timePlot').getContext('2d');
+        const springCtx = document.getElementById('springMass').getContext('2d');
+        const freqCtx = document.getElementById('frequencyPlot').getContext('2d');
+        
+        // Calculate derived parameters
+        function calculateParams() {
+            const omega_n = Math.sqrt(springConstant / mass);
+            const zeta = gamma === 0 ? 0 : gamma / omega_n;
+            const omega_d = omega_n * Math.sqrt(Math.max(0, 1 - zeta * zeta));
+            const c = 2 * mass * gamma;
+            const qualityFactor = gamma === 0 ? Infinity : omega_n / (2 * gamma);
+            const bandwidth = 2 * gamma;
+            
+            return { omega_n, zeta, omega_d, c, qualityFactor, bandwidth };
+        }
+        
+        // Update equation display based on motion type
+        function updateEquationDisplay() {
+            const { omega_n, zeta } = calculateParams();
+            
+            let motionType = '';
+            let equation = '';
+            let solution = '';
+            let additionalInfo = '';
+            
+            if (gamma === 0 && forcingAmp === 0) {
+                motionType = 'Simple Harmonic Motion (SHM)';
+                equation = '<strong>Equation:</strong> mẍ + kx = 0';
+                solution = '<strong>Solution:</strong> x = A sen(ωₙt + φ) where ωₙ = √(k/m) = ' + omega_n.toFixed(2) + ' rad/s';
+                additionalInfo = 'No damping, no external force. Pure sinusoidal oscillation with constant amplitude.<br><span style="color: #0c5460; font-style: italic;">Tip: Increase F₀ to add external forcing, or increase γ to add damping.</span>';
+            } else if (gamma === 0 && forcingAmp > 0) {
+                motionType = 'Undamped Forced Oscillation';
+                equation = '<strong>Equation:</strong> mẍ + kx = F₀cos(ωt + φ₀)';
+                if (Math.abs(forcingFreq - omega_n) < 0.1) {
+                    solution = '<strong>Solution (Resonance):</strong> x = At sin(ωₙt + φ₀) [amplitude grows linearly]';
+                    additionalInfo = 'At resonance (ω ≈ ωₙ), amplitude grows unbounded without damping!';
+                } else {
+                    solution = '<strong>Solution:</strong> x = A₁cos(ωₙt) + A₂cos(ωt + φ₀)';
+                    additionalInfo = 'Superposition of natural and forced oscillations (beats may occur).';
+                }
+            } else if (gamma > 0 && forcingAmp === 0) {
+                // Free damped oscillation - use gamma vs omega_n comparison
+                if (gamma < omega_n) {
+                    const omega_d_val = calculateParams().omega_d;
+                    motionType = 'Underdamped Free Oscillation (γ < ω₀)';
+                    equation = '<strong>Equation:</strong> ẍ + 2γẋ + ω₀²x = 0 &nbsp;&nbsp; [γ = c/(2m)]';
+                    solution = '<strong>Solution:</strong> x = De<sup>-γt</sup> sen(ωt + φ)';
+                    additionalInfo = `<strong>where:</strong> ω = √(ω₀² - γ²) = √(${omega_n.toFixed(2)}² - ${gamma.toFixed(2)}²) = <strong>${omega_d_val.toFixed(3)} rad/s</strong><br>` +
+                                   `γ = c/(2m) = ${gamma.toFixed(3)} s⁻¹, c = ${(2 * mass * gamma).toFixed(3)} Ns/m, ω₀ = ${omega_n.toFixed(3)} rad/s, ζ = ${zeta.toFixed(3)}`;
+                } else if (Math.abs(gamma - omega_n) < 0.01) {
+                    motionType = 'Critically Damped Free Oscillation (γ = ω₀)';
+                    equation = '<strong>Equation:</strong> ẍ + 2γẋ + ω₀²x = 0 &nbsp;&nbsp; [γ = c/(2m)]';
+                    solution = '<strong>Solution:</strong> x = (A + Bt)e<sup>-γt</sup>';
+                    additionalInfo = `γ = c/(2m) = ω₀ = ${gamma.toFixed(3)} s⁻¹, c = ${(2 * mass * gamma).toFixed(3)} Ns/m (ζ = 1). Returns to equilibrium fastest without oscillating.`;
+                } else {
+                    const lambda1 = -gamma + Math.sqrt(gamma * gamma - omega_n * omega_n);
+                    const lambda2 = -gamma - Math.sqrt(gamma * gamma - omega_n * omega_n);
+                    motionType = 'Overdamped Free Oscillation (γ > ω₀)';
+                    equation = '<strong>Equation:</strong> ẍ + 2γẋ + ω₀²x = 0 &nbsp;&nbsp; [γ = c/(2m)]';
+                    solution = '<strong>Solution:</strong> x = A₁e<sup>λ₁t</sup> + A₂e<sup>λ₂t</sup>';
+                    additionalInfo = `<strong>where:</strong> λ₁ = -γ + √(γ² - ω₀²) = ${lambda1.toFixed(3)} s⁻¹<br>` +
+                                   `λ₂ = -γ - √(γ² - ω₀²) = ${lambda2.toFixed(3)} s⁻¹<br>` +
+                                   `γ = c/(2m) = ${gamma.toFixed(3)} s⁻¹, c = ${(2 * mass * gamma).toFixed(3)} Ns/m, ω₀ = ${omega_n.toFixed(3)} rad/s, ζ = ${zeta.toFixed(3)}`;
+                }
+            } else {
+                // Forced damped oscillation - use gamma vs omega_n comparison
+                if (gamma < omega_n) {
+                    const omega_d_val = calculateParams().omega_d;
+                    const delta = Math.atan2(2 * mass * gamma * forcingFreq, springConstant - mass * forcingFreq * forcingFreq);
+                    motionType = 'Underdamped Forced Oscillation (γ < ω₀)';
+                    equation = '<strong>Equation:</strong> ẍ + 2γẋ + ω₀²x = (F₀/m)cos(ωt + φ₀) &nbsp;&nbsp; [γ = c/(2m)]';
+                    solution = '<strong>Solution:</strong> x = De<sup>-γt</sup> sen(ωt + φ) + B cos(ω<sub>f</sub>t + φ₀ - δ)';
+                    additionalInfo = `<strong>Transient:</strong> ω = √(ω₀² - γ²) = ${omega_d_val.toFixed(3)} rad/s<br>` +
+                                   `<strong>Steady-state:</strong> Phase lag δ = ${(delta * 180 / Math.PI).toFixed(1)}°, ω<sub>f</sub> = ${forcingFreq.toFixed(2)} rad/s<br>` +
+                                   `γ = c/(2m) = ${gamma.toFixed(3)} s⁻¹, c = ${(2 * mass * gamma).toFixed(3)} Ns/m`;
+                } else if (Math.abs(gamma - omega_n) < 0.01) {
+                    motionType = 'Critically Damped Forced Oscillation (γ = ω₀)';
+                    equation = '<strong>Equation:</strong> ẍ + 2γẋ + ω₀²x = (F₀/m)cos(ωt + φ₀) &nbsp;&nbsp; [γ = c/(2m)]';
+                    solution = '<strong>Solution:</strong> x = (A + Bt)e<sup>-γt</sup> + C cos(ω<sub>f</sub>t + φ₀ - δ)';
+                    additionalInfo = `γ = c/(2m) = ω₀ = ${gamma.toFixed(3)} s⁻¹, c = ${(2 * mass * gamma).toFixed(3)} Ns/m (ζ = 1). Transient dies quickly, steady-state dominates.`;
+                } else {
+                    const lambda1 = -gamma + Math.sqrt(gamma * gamma - omega_n * omega_n);
+                    const lambda2 = -gamma - Math.sqrt(gamma * gamma - omega_n * omega_n);
+                    motionType = 'Overdamped Forced Oscillation (γ > ω₀)';
+                    equation = '<strong>Equation:</strong> ẍ + 2γẋ + ω₀²x = (F₀/m)cos(ωt + φ₀) &nbsp;&nbsp; [γ = c/(2m)]';
+                    solution = '<strong>Solution:</strong> x = A₁e<sup>λ₁t</sup> + A₂e<sup>λ₂t</sup> + B cos(ω<sub>f</sub>t + φ₀ - δ)';
+                    additionalInfo = `<strong>Transient:</strong> λ₁ = ${lambda1.toFixed(3)} s⁻¹, λ₂ = ${lambda2.toFixed(3)} s⁻¹<br>` +
+                                   `γ = c/(2m) = ${gamma.toFixed(3)} s⁻¹, c = ${(2 * mass * gamma).toFixed(3)} Ns/m, ω₀ = ${omega_n.toFixed(3)} rad/s, ζ = ${zeta.toFixed(3)}`;
+                }
+            }
+            
+            document.getElementById('motionType').innerHTML = motionType;
+            document.getElementById('equationOfMotion').innerHTML = equation;
+            document.getElementById('solutionForm').innerHTML = solution;
+            document.getElementById('additionalInfo').innerHTML = additionalInfo;
+        }
+        
+        // Enable/disable controls based on motion type
+        function updateControlStates() {
+            const forcingAmpInput = document.getElementById('forcingAmp');
+            const phaseConstantInput = document.getElementById('phaseConstant');
+            const forcingAmpLabel = forcingAmpInput.parentElement.querySelector('label');
+            const phaseConstantLabel = phaseConstantInput.parentElement.querySelector('label');
+            
+            // Always keep forcing parameters enabled - user can choose when to set them to 0
+            forcingAmpInput.disabled = false;
+            phaseConstantInput.disabled = false;
+            forcingAmpInput.style.opacity = '1';
+            phaseConstantInput.style.opacity = '1';
+            forcingAmpLabel.style.opacity = '1';
+            phaseConstantLabel.style.opacity = '1';
+        }
+        
+        // Update parameter displays
+        function updateDisplays() {
+            const { omega_n, zeta, omega_d, c, qualityFactor, bandwidth } = calculateParams();
+            
+            // Calculate relaxation time τ = 1/γ
+            const tau = gamma > 0 ? 1 / gamma : Infinity;
+            
+            document.getElementById('omega_n_display').textContent = omega_n.toFixed(2);
+            document.getElementById('zeta_display').textContent = zeta.toFixed(3);
+            document.getElementById('omega_d_display').textContent = omega_d.toFixed(2);
+            document.getElementById('tau_display').textContent = tau === Infinity ? '∞' : tau.toFixed(2);
+            document.getElementById('c_display').textContent = c.toFixed(2);
+            document.getElementById('q_display').textContent = qualityFactor === Infinity ? '∞' : qualityFactor.toFixed(2);
+            document.getElementById('bandwidth_display').textContent = bandwidth.toFixed(2);
+            
+            let dampingType = 'Underdamped';
+            if (gamma === 0) dampingType = 'Undamped';
+            else if (Math.abs(gamma - omega_n) < 0.01) dampingType = 'Critically damped';
+            else if (gamma > omega_n) dampingType = 'Overdamped';
+            document.getElementById('damping_type').textContent = `Damping Ratio (${dampingType})`;
+            
+            document.getElementById('mass_value').textContent = mass.toFixed(2);
+            document.getElementById('spring_value').textContent = springConstant.toFixed(2);
+            document.getElementById('gamma_value').textContent = gamma.toFixed(2);
+            document.getElementById('forcingFreq_value').textContent = forcingFreq.toFixed(2);
+            document.getElementById('forcingAmp_value').textContent = forcingAmp.toFixed(1);
+            document.getElementById('phaseConstant_value').textContent = phaseConstant.toFixed(2);
+            document.getElementById('totalTime_value').textContent = totalTime.toFixed(1);
+            document.getElementById('x0_value').textContent = x0.toFixed(2);
+            document.getElementById('v0_value').textContent = v0.toFixed(2);
+            
+            updateEquationDisplay();
+            updateControlStates();
+        }
+        
+        // Calculate solution at time t
+        function calculateSolution(t) {
+            const { omega_n, zeta, omega_d } = calculateParams();
+            const omega_f = forcingFreq;
+            
+            if (gamma === 0 && forcingAmp === 0) {
+                // SHM: x = A sin(ω₀t + φ)
+                // x(0) = A sin(φ) = x0
+                // v(0) = A ω₀ cos(φ) = v0
+                // Therefore: A² = x0² + (v0/ω₀)²  and  tan(φ) = x0·ω₀/v0
+                const A = Math.sqrt(x0 * x0 + (v0 / omega_n) * (v0 / omega_n));
+                const phi = Math.atan2(x0, v0 / omega_n);
+                const homogeneous = A * Math.sin(omega_n * t + phi);
+                return { homogeneous, permanent: 0, total: homogeneous };
+            } else if (gamma === 0 && forcingAmp > 0) {
+                if (Math.abs(omega_f - omega_n) < 0.01) {
+                    const A = forcingAmp / (2 * mass * omega_n);
+                    const permanent = A * t * Math.sin(omega_n * t + phaseConstant);
+                    const homogeneous = -A * phaseConstant * Math.cos(omega_n * t);
+                    return { homogeneous, permanent, total: homogeneous + permanent };
+                } else {
+                    const A = forcingAmp / (mass * (omega_n * omega_n - omega_f * omega_f));
+                    const C1 = -A * Math.cos(phaseConstant);
+                    const homogeneous = C1 * Math.cos(omega_n * t);
+                    const permanent = A * Math.cos(omega_f * t + phaseConstant);
+                    return { homogeneous, permanent, total: homogeneous + permanent };
+                }
+            } else if (gamma > 0 && forcingAmp === 0) {
+                if (gamma < omega_n) {
+                    // Underdamped: x = D e^(-γt) sin(ωt + φ)
+                    // x(0) = D sin(φ) = x0
+                    // v(0) = D[-γ sin(φ) + ω cos(φ)] = v0
+                    const D = Math.sqrt(x0 * x0 + ((v0 + gamma * x0) / omega_d) * ((v0 + gamma * x0) / omega_d));
+                    const phi = Math.atan2(x0, (v0 + gamma * x0) / omega_d);
+                    const homogeneous = D * Math.exp(-gamma * t) * Math.sin(omega_d * t + phi);
+                    return { homogeneous, permanent: 0, total: homogeneous };
+                } else if (Math.abs(gamma - omega_n) < 0.01) {
+                    // Critically damped: x = (A + Bt) e^(-γt)
+                    // x(0) = A = x0
+                    // v(0) = B - γA = v0  →  B = v0 + γx0
+                    const A = x0;
+                    const B = v0 + gamma * x0;
+                    const homogeneous = (A + B * t) * Math.exp(-gamma * t);
+                    return { homogeneous, permanent: 0, total: homogeneous };
+                } else {
+                    // Overdamped: x = A₁ e^(λ₁t) + A₂ e^(λ₂t)
+                    // x(0) = A₁ + A₂ = x0
+                    // v(0) = A₁λ₁ + A₂λ₂ = v0
+                    const lambda1 = -gamma + Math.sqrt(gamma * gamma - omega_n * omega_n);
+                    const lambda2 = -gamma - Math.sqrt(gamma * gamma - omega_n * omega_n);
+                    const A2 = (v0 - lambda1 * x0) / (lambda2 - lambda1);
+                    const A1 = x0 - A2;
+                    const homogeneous = A1 * Math.exp(lambda1 * t) + A2 * Math.exp(lambda2 * t);
+                    return { homogeneous, permanent: 0, total: homogeneous };
+                }
+            } else {
+                const A = forcingAmp / Math.sqrt(
+                    Math.pow(springConstant - mass * omega_f * omega_f, 2) + 
+                    Math.pow(2 * mass * gamma * omega_f, 2)
+                );
+                const phi = Math.atan2(2 * mass * gamma * omega_f, springConstant - mass * omega_f * omega_f);
+                
+                if (gamma < omega_n) {
+                    const C1 = -A * Math.cos(phi - phaseConstant);
+                    const C2 = (A * omega_f * Math.sin(phi - phaseConstant) + gamma * C1) / omega_d;
+                    const homogeneous = Math.exp(-gamma * t) * (C1 * Math.cos(omega_d * t) + C2 * Math.sin(omega_d * t));
+                    const permanent = A * Math.cos(omega_f * t + phaseConstant - phi);
+                    return { homogeneous, permanent, total: homogeneous + permanent };
+                } else {
+                    const permanent = A * Math.cos(omega_f * t + phaseConstant - phi);
+                    const homogeneous = -permanent * Math.exp(-gamma * t);
+                    return { homogeneous, permanent, total: homogeneous + permanent };
+                }
+            }
+        }
+        
+        // Calculate amplitude for frequency response
+        function calculateAmplitude(omega) {
+            if (forcingAmp === 0) return 0;
+            
+            const { omega_n } = calculateParams();
+            const numerator = forcingAmp / mass;
+            
+            if (gamma === 0) {
+                if (Math.abs(omega - omega_n) < 0.01) return numerator * 50;
+                const denominator = Math.abs(omega_n * omega_n - omega * omega);
+                return Math.min(numerator / denominator, numerator * 50);
+            }
+            
+            const denominator = Math.sqrt(
+                Math.pow(omega_n * omega_n - omega * omega, 2) + 
+                Math.pow(2 * gamma * omega, 2)
+            );
+            return numerator / denominator;
+        }
+        
+        // Plot time series
+        function plotTimeSeries() {
+            const canvas = document.getElementById('timePlot');
+            const ctx = timeCtx;
+            const width = canvas.width;
+            const height = canvas.height;
+            const padding = 60;
+            const plotWidth = width - 2 * padding;
+            const plotHeight = height - 2 * padding;
+            
+            ctx.clearRect(0, 0, width, height);
+            
+            const maxTime = totalTime;
+            const steps = 300;
+            const displayTime = isPlaying ? time : maxTime;
+            
+            const data = [];
+            let maxDisp = 0;
+            for (let i = 0; i <= steps; i++) {
+                const t = (i / steps) * maxTime;
+                if (t <= displayTime || !isPlaying) {
+                    const sol = calculateSolution(t);
+                    data.push({ time: t, ...sol });
+                    maxDisp = Math.max(maxDisp, Math.abs(sol.total), Math.abs(sol.homogeneous), Math.abs(sol.permanent));
+                }
+            }
+            
+            maxDisp = Math.max(maxDisp, 0.5) * 1.2;
+            
+            ctx.strokeStyle = '#000';
+            ctx.lineWidth = 2;
+            ctx.beginPath();
+            ctx.moveTo(padding, padding);
+            ctx.lineTo(padding, height - padding);
+            ctx.lineTo(width - padding, height - padding);
+            ctx.stroke();
+            
+            ctx.strokeStyle = '#e0e0e0';
+            ctx.lineWidth = 1;
+            for (let i = 0; i <= 5; i++) {
+                const y = padding + (plotHeight * i / 5);
+                ctx.beginPath();
+                ctx.moveTo(padding, y);
+                ctx.lineTo(width - padding, y);
+                ctx.stroke();
+            }
+            
+            ctx.fillStyle = '#000';
+            ctx.font = '12px Arial';
+            ctx.textAlign = 'right';
+            for (let i = 0; i <= 4; i++) {
+                const y = padding + (plotHeight * i / 4);
+                const value = maxDisp - (2 * maxDisp * i / 4);
+                ctx.fillText(value.toFixed(2), padding - 10, y + 4);
+            }
+            
+            ctx.textAlign = 'center';
+            for (let i = 0; i <= 5; i++) {
+                const x = padding + (plotWidth * i / 5);
+                const value = maxTime * i / 5;
+                ctx.fillText(value.toFixed(1), x, height - padding + 20);
+            }
+            
+            ctx.fillStyle = '#000';
+            ctx.font = 'bold 14px Arial';
+            ctx.textAlign = 'center';
+            ctx.fillText('Time (s)', width / 2, height - 10);
+            
+            ctx.save();
+            ctx.translate(15, height / 2);
+            ctx.rotate(-Math.PI / 2);
+            ctx.fillText('Displacement (m)', 0, 0);
+            ctx.restore();
+            
+            function plotLine(dataKey, color, lineWidth, dash = []) {
+                ctx.strokeStyle = color;
+                ctx.lineWidth = lineWidth;
+                ctx.setLineDash(dash);
+                ctx.beginPath();
+                
+                for (let i = 0; i < data.length; i++) {
+                    const x = padding + (data[i].time / maxTime) * plotWidth;
+                    const y = padding + plotHeight / 2 - (data[i][dataKey] / maxDisp) * (plotHeight / 2);
+                    
+                    if (i === 0) ctx.moveTo(x, y);
+                    else ctx.lineTo(x, y);
+                }
+                ctx.stroke();
+                ctx.setLineDash([]);
+            }
+            
+            plotLine('homogeneous', '#e74c3c', 2, [5, 5]);
+            plotLine('permanent', '#27ae60', 2, [5, 5]);
+            plotLine('total', '#2c3e50', 3, []);
+            
+            const legendX = width - 200;
+            const legendY = 30;
+            const legendItems = [
+                { label: 'Total', color: '#2c3e50', dash: [] },
+                { label: 'Transient', color: '#e74c3c', dash: [5, 5] },
+                { label: 'Steady-state', color: '#27ae60', dash: [5, 5] }
+            ];
+            
+            legendItems.forEach((item, i) => {
+                const y = legendY + i * 20;
+                ctx.strokeStyle = item.color;
+                ctx.lineWidth = 2;
+                ctx.setLineDash(item.dash);
+                ctx.beginPath();
+                ctx.moveTo(legendX, y);
+                ctx.lineTo(legendX + 30, y);
+                ctx.stroke();
+                ctx.setLineDash([]);
+                
+                ctx.fillStyle = '#000';
+                ctx.font = '12px Arial';
+                ctx.textAlign = 'left';
+                ctx.fillText(item.label, legendX + 35, y + 4);
+            });
+        }
+        
+        // Draw spring-mass system
+        function drawSpringMass() {
+            const canvas = document.getElementById('springMass');
+            const ctx = springCtx;
+            const width = canvas.width;
+            const height = canvas.height;
+            
+            ctx.clearRect(0, 0, width, height);
+            
+            const equilibriumY = 240;
+            const scale = 30;
+            const { total: currentPosition } = calculateSolution(time);
+            const massY = equilibriumY + currentPosition * scale;
+            
+            ctx.fillStyle = '#34495e';
+            ctx.fillRect(0, 0, width, 20);
+            
+            ctx.strokeStyle = '#2c3e50';
+            ctx.lineWidth = 2;
+            for (let i = 0; i < width; i += 15) {
+                ctx.beginPath();
+                ctx.moveTo(i, 20);
+                ctx.lineTo(i + 10, 0);
+                ctx.stroke();
+            }
+            
+            const springCenterX = width / 2 - 30;
+            const springTop = 20;
+            const springBottom = massY - 40;
+            const springCoils = 12;
+            const springWidth = 15;
+            
+            ctx.strokeStyle = '#3498db';
+            ctx.lineWidth = 3;
+            ctx.beginPath();
+            ctx.moveTo(springCenterX, springTop);
+            
+            for (let i = 0; i <= springCoils; i++) {
+                const y = springTop + (springBottom - springTop) * i / springCoils;
+                const x = springCenterX + (i % 2 === 0 ? -springWidth : springWidth);
+                ctx.lineTo(x, y);
+            }
+            ctx.lineTo(springCenterX, springBottom);
+            ctx.stroke();
+            
+            const massWidth = 80;
+            const massHeight = 60;
+            const massCenterX = width / 2;
+            ctx.fillStyle = '#e74c3c';
+            ctx.strokeStyle = '#c0392b';
+            ctx.lineWidth = 2;
+            ctx.fillRect(massCenterX - massWidth / 2, massY - massHeight / 2, massWidth, massHeight);
+            ctx.strokeRect(massCenterX - massWidth / 2, massY - massHeight / 2, massWidth, massHeight);
+            
+            ctx.fillStyle = 'white';
+            ctx.font = 'bold 18px Arial';
+            ctx.textAlign = 'center';
+            ctx.textBaseline = 'middle';
+            ctx.fillText('m', massCenterX, massY);
+            
+            if (gamma > 0) {
+                const damperX = width / 2 + 50;
+                ctx.strokeStyle = '#95a5a6';
+                ctx.lineWidth = 3;
+                ctx.beginPath();
+                ctx.moveTo(damperX, springTop);
+                ctx.lineTo(damperX, springBottom - 30);
+                ctx.stroke();
+                
+                ctx.strokeStyle = '#7f8c8d';
+                ctx.strokeRect(damperX - 15, springBottom - 30, 30, 40);
+                
+                ctx.strokeStyle = '#95a5a6';
+                ctx.beginPath();
+                ctx.moveTo(damperX, springBottom + 10);
+                ctx.lineTo(damperX, springBottom);
+                ctx.stroke();
+            }
+            
+            ctx.strokeStyle = '#95a5a6';
+            ctx.lineWidth = 1;
+            ctx.setLineDash([5, 5]);
+            ctx.beginPath();
+            ctx.moveTo(30, equilibriumY);
+            ctx.lineTo(width - 30, equilibriumY);
+            ctx.stroke();
+            ctx.setLineDash([]);
+        }
+        
+        // Plot frequency response
+        function plotFrequencyResponse() {
+            const canvas = document.getElementById('frequencyPlot');
+            const ctx = freqCtx;
+            const width = canvas.width;
+            const height = canvas.height;
+            const padding = 60;
+            const plotWidth = width - 2 * padding;
+            const plotHeight = height - 2 * padding;
+            
+            ctx.clearRect(0, 0, width, height);
+            
+            const { omega_n } = calculateParams();
+            const steps = 200;
+            const maxFreq = omega_n * 3;
+            
+            const data = [];
+            let maxAmp = 0;
+            for (let i = 0; i <= steps; i++) {
+                const omega = (i / steps) * maxFreq;
+                const amp = calculateAmplitude(omega);
+                data.push({ freq: omega, amp });
+                maxAmp = Math.max(maxAmp, amp);
+            }
+            
+            maxAmp = Math.max(maxAmp, 0.5) * 1.2;
+            
+            ctx.strokeStyle = '#000';
+            ctx.lineWidth = 2;
+            ctx.beginPath();
+            ctx.moveTo(padding, padding);
+            ctx.lineTo(padding, height - padding);
+            ctx.lineTo(width - padding, height - padding);
+            ctx.stroke();
+            
+            ctx.strokeStyle = '#e0e0e0';
+            ctx.lineWidth = 1;
+            for (let i = 0; i <= 5; i++) {
+                const y = padding + (plotHeight * i / 5);
+                ctx.beginPath();
+                ctx.moveTo(padding, y);
+                ctx.lineTo(width - padding, y);
+                ctx.stroke();
+            }
+            
+            ctx.fillStyle = '#000';
+            ctx.font = '12px Arial';
+            ctx.textAlign = 'right';
+            for (let i = 0; i <= 4; i++) {
+                const y = padding + (plotHeight * i / 4);
+                const value = maxAmp - (maxAmp * i / 4);
+                ctx.fillText(value.toFixed(2), padding - 10, y + 4);
+            }
+            
+            ctx.textAlign = 'center';
+            for (let i = 0; i <= 5; i++) {
+                const x = padding + (plotWidth * i / 5);
+                const value = maxFreq * i / 5;
+                ctx.fillText(value.toFixed(1), x, height - padding + 20);
+            }
+            
+            ctx.fillStyle = '#000';
+            ctx.font = 'bold 14px Arial';
+            ctx.fillText('Force Frequency ω (rad/s)', width / 2, height - 10);
+            
+            ctx.save();
+            ctx.translate(15, height / 2);
+            ctx.rotate(-Math.PI / 2);
+            ctx.fillText('Amplitude (m)', 0, 0);
+            ctx.restore();
+            
+            ctx.strokeStyle = '#8b5cf6';
+            ctx.lineWidth = 3;
+            ctx.beginPath();
+            
+            for (let i = 0; i < data.length; i++) {
+                const x = padding + (data[i].freq / maxFreq) * plotWidth;
+                const y = height - padding - (data[i].amp / maxAmp) * plotHeight;
+                
+                if (i === 0) ctx.moveTo(x, y);
+                else ctx.lineTo(x, y);
+            }
+            ctx.stroke();
+            
+            if (forcingAmp > 0) {
+                const currentX = padding + (forcingFreq / maxFreq) * plotWidth;
+                const currentAmp = calculateAmplitude(forcingFreq);
+                const currentY = height - padding - (currentAmp / maxAmp) * plotHeight;
+                
+                ctx.fillStyle = '#e74c3c';
+                ctx.beginPath();
+                ctx.arc(currentX, currentY, 6, 0, 2 * Math.PI);
+                ctx.fill();
+            }
+            
+            const naturalX = padding + (omega_n / maxFreq) * plotWidth;
+            ctx.strokeStyle = '#27ae60';
+            ctx.lineWidth = 2;
+            ctx.setLineDash([5, 5]);
+            ctx.beginPath();
+            ctx.moveTo(naturalX, padding);
+            ctx.lineTo(naturalX, height - padding);
+            ctx.stroke();
+            ctx.setLineDash([]);
+            
+            // Add legend
+            const legendX = width - 220;
+            const legendY = 40;
+            
+            // Red circle legend
+            if (forcingAmp > 0) {
+                ctx.fillStyle = '#e74c3c';
+                ctx.beginPath();
+                ctx.arc(legendX, legendY, 6, 0, 2 * Math.PI);
+                ctx.fill();
+                
+                ctx.fillStyle = '#000';
+                ctx.font = '13px Arial';
+                ctx.textAlign = 'left';
+                ctx.fillText('Current operating point', legendX + 15, legendY + 4);
+            }
+            
+            // Green line legend
+            ctx.strokeStyle = '#27ae60';
+            ctx.lineWidth = 2;
+            ctx.setLineDash([5, 5]);
+            ctx.beginPath();
+            ctx.moveTo(legendX - 10, legendY + 25);
+            ctx.lineTo(legendX + 30, legendY + 25);
+            ctx.stroke();
+            ctx.setLineDash([]);
+            
+            ctx.fillStyle = '#000';
+            ctx.font = '13px Arial';
+            ctx.textAlign = 'left';
+            ctx.fillText('Natural frequency ω₀', legendX + 35, legendY + 29);
+            
+            // Orange line legend (bandwidth)
+            if (gamma > 0 && forcingAmp > 0) {
+                ctx.strokeStyle = '#ff8c00';
+                ctx.lineWidth = 3;
+                ctx.beginPath();
+                ctx.moveTo(legendX - 10, legendY + 50);
+                ctx.lineTo(legendX + 30, legendY + 50);
+                ctx.stroke();
+                
+                ctx.fillStyle = '#000';
+                ctx.font = '13px Arial';
+                ctx.textAlign = 'left';
+                ctx.fillText('Bandwidth Δω', legendX + 35, legendY + 54);
+            }
+            
+            // Draw bandwidth indicator if damping exists
+            if (gamma > 0 && forcingAmp > 0) {
+                const { qualityFactor } = calculateParams();
+                
+                // Calculate bandwidth frequencies directly
+                // For underdamped systems: ω1 ≈ ω₀ - γ, ω2 ≈ ω₀ + γ
+                const omega_lower = Math.max(0, omega_n - gamma);
+                const omega_upper = omega_n + gamma;
+                
+                // Calculate amplitude at these frequencies
+                const amp_lower = calculateAmplitude(omega_lower);
+                const amp_upper = calculateAmplitude(omega_upper);
+                
+                const x_lower = padding + (omega_lower / maxFreq) * plotWidth;
+                const x_upper = padding + (omega_upper / maxFreq) * plotWidth;
+                const y_lower = height - padding - (amp_lower / maxAmp) * plotHeight;
+                const y_upper = height - padding - (amp_upper / maxAmp) * plotHeight;
+                
+                // Draw vertical lines at bandwidth edges - SOLID LINES for visibility
+                ctx.strokeStyle = '#ff8c00';  // Darker orange
+                ctx.lineWidth = 3;
+                ctx.beginPath();
+                ctx.moveTo(x_lower, height - padding);
+                ctx.lineTo(x_lower, y_lower);
+                ctx.stroke();
+                
+                ctx.beginPath();
+                ctx.moveTo(x_upper, height - padding);
+                ctx.lineTo(x_upper, y_upper);
+                ctx.stroke();
+                
+                // Draw horizontal line connecting the bandwidth points
+                ctx.strokeStyle = '#ff8c00';
+                ctx.lineWidth = 2;
+                ctx.setLineDash([5, 5]);
+                ctx.beginPath();
+                ctx.moveTo(x_lower, (y_lower + y_upper) / 2);
+                ctx.lineTo(x_upper, (y_lower + y_upper) / 2);
+                ctx.stroke();
+                ctx.setLineDash([]);
+                
+                // Add bandwidth arrow at the bottom
+                const arrow_y = height - padding + 20;
+                ctx.strokeStyle = '#ff8c00';
+                ctx.fillStyle = '#ff8c00';
+                ctx.lineWidth = 3;
+                ctx.beginPath();
+                ctx.moveTo(x_lower, arrow_y);
+                ctx.lineTo(x_upper, arrow_y);
+                ctx.stroke();
+                
+                // Arrow heads
+                const arrowSize = 10;
+                ctx.beginPath();
+                ctx.moveTo(x_lower, arrow_y);
+                ctx.lineTo(x_lower + arrowSize, arrow_y - arrowSize/2);
+                ctx.lineTo(x_lower + arrowSize, arrow_y + arrowSize/2);
+                ctx.closePath();
+                ctx.fill();
+                
+                ctx.beginPath();
+                ctx.moveTo(x_upper, arrow_y);
+                ctx.lineTo(x_upper - arrowSize, arrow_y - arrowSize/2);
+                ctx.lineTo(x_upper - arrowSize, arrow_y + arrowSize/2);
+                ctx.closePath();
+                ctx.fill();
+                
+                // Label bandwidth
+                ctx.fillStyle = '#ff8c00';
+                ctx.font = 'bold 14px Arial';
+                ctx.textAlign = 'center';
+                ctx.fillText('Δω = ' + (omega_upper - omega_lower).toFixed(2) + ' rad/s', (x_lower + x_upper) / 2, arrow_y - 8);
+            }
+            
+            // Update info displays
+            const { qualityFactor, bandwidth } = calculateParams();
+            document.getElementById('freq_q_factor').textContent = qualityFactor === Infinity ? '∞' : qualityFactor.toFixed(2);
+            document.getElementById('freq_bandwidth').textContent = bandwidth.toFixed(3);
+        }
+        
+        // Animation loop
+        function animate() {
+            if (!isPlaying) return;
+            
+            const deltaTime = 1/60;
+            time += deltaTime;
+            
+            if (time >= totalTime) {
+                time = totalTime;
+                isPlaying = false;
+                document.getElementById('playBtn').textContent = 'Restart';
+            }
+            
+            document.getElementById('timeDisplay').textContent = time.toFixed(2);
+            plotTimeSeries();
+            drawSpringMass();
+            
+            if (isPlaying) {
+                animationId = requestAnimationFrame(animate);
+            }
+        }
+        
+        // Event listeners
+        document.getElementById('mass').addEventListener('input', (e) => {
+            mass = parseFloat(e.target.value);
+            updateDisplays();
+            plotTimeSeries();
+            plotFrequencyResponse();
+            drawSpringMass();
+        });
+        
+        document.getElementById('spring').addEventListener('input', (e) => {
+            springConstant = parseFloat(e.target.value);
+            updateDisplays();
+            plotTimeSeries();
+            plotFrequencyResponse();
+            drawSpringMass();
+        });
+        
+        document.getElementById('gamma').addEventListener('input', (e) => {
+            gamma = parseFloat(e.target.value);
+            updateDisplays();
+            plotTimeSeries();
+            plotFrequencyResponse();
+            drawSpringMass();
+        });
+        
+        document.getElementById('forcingFreq').addEventListener('input', (e) => {
+            forcingFreq = parseFloat(e.target.value);
+            updateDisplays();
+            plotTimeSeries();
+            plotFrequencyResponse();
+            drawSpringMass();
+        });
+        
+        document.getElementById('forcingAmp').addEventListener('input', (e) => {
+            forcingAmp = parseFloat(e.target.value);
+            updateDisplays();
+            plotTimeSeries();
+            plotFrequencyResponse();
+            drawSpringMass();
+        });
+        
+        document.getElementById('phaseConstant').addEventListener('input', (e) => {
+            phaseConstant = parseFloat(e.target.value);
+            updateDisplays();
+            plotTimeSeries();
+            drawSpringMass();
+        });
+        
+        document.getElementById('totalTime').addEventListener('input', (e) => {
+            totalTime = parseFloat(e.target.value);
+            updateDisplays();
+            plotTimeSeries();
+            if (time > totalTime) {
+                time = totalTime;
+                document.getElementById('timeDisplay').textContent = time.toFixed(2);
+                drawSpringMass();
+            }
+        });
+        
+        document.getElementById('x0').addEventListener('input', (e) => {
+            x0 = parseFloat(e.target.value);
+            updateDisplays();
+            plotTimeSeries();
+            plotFrequencyResponse();
+            drawSpringMass();
+        });
+        
+        document.getElementById('v0').addEventListener('input', (e) => {
+            v0 = parseFloat(e.target.value);
+            updateDisplays();
+            plotTimeSeries();
+            plotFrequencyResponse();
+            drawSpringMass();
+        });
+        
+        document.getElementById('playBtn').addEventListener('click', () => {
+            if (time >= totalTime) {
+                time = 0;
+            }
+            isPlaying = !isPlaying;
+            document.getElementById('playBtn').textContent = isPlaying ? 'Pause' : (time >= totalTime ? 'Restart' : 'Play');
+            if (isPlaying) {
+                animate();
+            } else if (animationId) {
+                cancelAnimationFrame(animationId);
+            }
+        });
+        
+        document.getElementById('resetBtn').addEventListener('click', () => {
+            isPlaying = false;
+            time = 0;
+            document.getElementById('playBtn').textContent = 'Play';
+            if (animationId) {
+                cancelAnimationFrame(animationId);
+            }
+            document.getElementById('timeDisplay').textContent = '0.00';
+            plotTimeSeries();
+            drawSpringMass();
+        });
+        
+        // Initial render
+        updateDisplays();
+        plotTimeSeries();
+        plotFrequencyResponse();
+        drawSpringMass();
+    </script>
+</body>
+</html>
