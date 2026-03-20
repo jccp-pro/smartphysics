@@ -1,0 +1,702 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Analizador Doppler — SmartPhysics</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.js"></script>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;700&family=Inter:wght@300;400;500&display=swap');
+
+  :root {
+    --bg: #0d0f12;
+    --bg2: #141720;
+    --bg3: #1c2030;
+    --border: rgba(255,255,255,0.07);
+    --border2: rgba(255,255,255,0.13);
+    --teal: #00e5a0;
+    --teal2: #00b87e;
+    --red: #ff5252;
+    --amber: #ffb340;
+    --text: #e8eaf0;
+    --muted: #7a8096;
+    --mono: 'JetBrains Mono', monospace;
+    --sans: 'Inter', sans-serif;
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: var(--sans);
+    min-height: 100vh;
+    padding: 0;
+  }
+
+  header {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    padding: 18px 28px;
+    border-bottom: 0.5px solid var(--border);
+    background: var(--bg2);
+  }
+
+  .logo-mark {
+    width: 36px; height: 36px;
+    border-radius: 8px;
+    background: var(--teal);
+    display: flex; align-items: center; justify-content: center;
+    flex-shrink: 0;
+  }
+
+  .logo-mark svg { width: 20px; height: 20px; }
+
+  header h1 {
+    font-family: var(--mono);
+    font-size: 15px;
+    font-weight: 700;
+    letter-spacing: 0.04em;
+    color: var(--text);
+  }
+
+  header p {
+    font-size: 12px;
+    color: var(--muted);
+    margin-top: 1px;
+  }
+
+  .badge {
+    margin-left: auto;
+    font-family: var(--mono);
+    font-size: 10px;
+    padding: 3px 10px;
+    border-radius: 20px;
+    border: 0.5px solid var(--teal2);
+    color: var(--teal);
+    letter-spacing: 0.08em;
+  }
+
+  .main { padding: 20px 28px; max-width: 900px; margin: 0 auto; }
+
+  .grid2 { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 12px; }
+  .grid3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 12px; margin-bottom: 12px; }
+  .grid4 { display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; margin-bottom: 12px; }
+
+  .card {
+    background: var(--bg2);
+    border: 0.5px solid var(--border);
+    border-radius: 10px;
+    padding: 16px 18px;
+  }
+
+  .card-title {
+    font-family: var(--mono);
+    font-size: 10px;
+    font-weight: 700;
+    letter-spacing: 0.1em;
+    color: var(--muted);
+    text-transform: uppercase;
+    margin-bottom: 14px;
+  }
+
+  .metric-card {
+    background: var(--bg3);
+    border: 0.5px solid var(--border);
+    border-radius: 10px;
+    padding: 14px 16px;
+    position: relative;
+    overflow: hidden;
+  }
+
+  .metric-card::before {
+    content: '';
+    position: absolute;
+    top: 0; left: 0; right: 0;
+    height: 2px;
+    background: var(--teal);
+    opacity: 0.4;
+  }
+
+  .metric-card.danger::before { background: var(--red); }
+  .metric-card.amber::before { background: var(--amber); }
+
+  .metric-label {
+    font-size: 11px;
+    color: var(--muted);
+    letter-spacing: 0.04em;
+    margin-bottom: 6px;
+  }
+
+  .metric-value {
+    font-family: var(--mono);
+    font-size: 26px;
+    font-weight: 700;
+    color: var(--text);
+    line-height: 1;
+  }
+
+  .metric-unit {
+    font-family: var(--mono);
+    font-size: 11px;
+    color: var(--muted);
+    margin-top: 4px;
+  }
+
+  .row { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; margin-bottom: 10px; }
+  .row:last-child { margin-bottom: 0; }
+
+  label {
+    font-size: 13px;
+    color: var(--muted);
+    min-width: 160px;
+    flex-shrink: 0;
+  }
+
+  input[type=number] {
+    background: var(--bg3);
+    border: 0.5px solid var(--border2);
+    border-radius: 6px;
+    color: var(--text);
+    font-family: var(--mono);
+    font-size: 14px;
+    padding: 6px 10px;
+    width: 90px;
+    outline: none;
+  }
+
+  input[type=number]:focus { border-color: var(--teal2); }
+
+  select {
+    background: var(--bg3);
+    border: 0.5px solid var(--border2);
+    border-radius: 6px;
+    color: var(--text);
+    font-family: var(--mono);
+    font-size: 13px;
+    padding: 6px 10px;
+    outline: none;
+    cursor: pointer;
+  }
+
+  select option { background: var(--bg2); }
+
+  input[type=range] {
+    -webkit-appearance: none;
+    appearance: none;
+    height: 4px;
+    background: var(--bg3);
+    border-radius: 2px;
+    outline: none;
+    flex: 1;
+    min-width: 80px;
+    border: 0.5px solid var(--border);
+  }
+
+  input[type=range]::-webkit-slider-thumb {
+    -webkit-appearance: none;
+    width: 14px; height: 14px;
+    border-radius: 50%;
+    background: var(--teal);
+    cursor: pointer;
+  }
+
+  .val-display {
+    font-family: var(--mono);
+    font-size: 13px;
+    color: var(--teal);
+    min-width: 36px;
+    text-align: right;
+  }
+
+  .ref-tag {
+    font-family: var(--mono);
+    font-size: 12px;
+    padding: 4px 12px;
+    border-radius: 20px;
+    background: rgba(0,229,160,0.08);
+    border: 0.5px solid rgba(0,229,160,0.25);
+    color: var(--teal);
+    margin-left: auto;
+  }
+
+  .btn {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 8px 18px;
+    border-radius: 8px;
+    border: 0.5px solid var(--border2);
+    background: transparent;
+    color: var(--text);
+    font-family: var(--mono);
+    font-size: 12px;
+    font-weight: 500;
+    cursor: pointer;
+    letter-spacing: 0.04em;
+    transition: all 0.15s;
+  }
+
+  .btn:hover { background: var(--bg3); border-color: var(--border2); }
+  .btn:disabled { opacity: 0.35; cursor: not-allowed; }
+
+  .btn.primary { border-color: var(--teal2); color: var(--teal); }
+  .btn.primary:hover { background: rgba(0,229,160,0.08); }
+  .btn.primary.active { background: var(--teal); color: #0d0f12; border-color: var(--teal); }
+
+  .btn.rec { border-color: rgba(255,82,82,0.4); color: var(--red); }
+  .btn.rec:hover { background: rgba(255,82,82,0.08); }
+  .btn.rec.active { background: var(--red); color: #fff; border-color: var(--red); }
+
+  .dot {
+    width: 7px; height: 7px;
+    border-radius: 50%;
+    background: var(--muted);
+    flex-shrink: 0;
+  }
+  .dot.on { background: var(--teal); box-shadow: 0 0 6px var(--teal); animation: blink 1.4s infinite; }
+  .dot.rec { background: var(--red); box-shadow: 0 0 6px var(--red); animation: blink 0.8s infinite; }
+
+  @keyframes blink { 0%,100%{opacity:1} 50%{opacity:0.4} }
+
+  canvas { display: block; width: 100%; }
+
+  #waveCanvas {
+    width: 100%;
+    height: 80px;
+    border-radius: 8px;
+    background: var(--bg3);
+    border: 0.5px solid var(--border);
+  }
+
+  #velCanvas {
+    width: 100%;
+    height: 220px;
+    border-radius: 8px;
+    background: var(--bg3);
+    border: 0.5px solid var(--border);
+  }
+
+  .formula-box {
+    background: var(--bg3);
+    border: 0.5px solid var(--border);
+    border-radius: 8px;
+    padding: 10px 16px;
+    font-family: var(--mono);
+    font-size: 13px;
+    color: var(--muted);
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin-top: 10px;
+  }
+
+  .formula-box span { color: var(--teal); font-weight: 700; }
+
+  .divider { height: 0.5px; background: var(--border); margin: 12px 0; }
+
+  .legend { display: flex; gap: 18px; margin-top: 8px; font-size: 12px; color: var(--muted); font-family: var(--mono); }
+  .legend-item { display: flex; align-items: center; gap: 6px; }
+  .legend-dot { width: 10px; height: 3px; border-radius: 2px; }
+
+  .status-bar {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 6px 18px;
+    font-family: var(--mono);
+    font-size: 11px;
+    color: var(--muted);
+    border-top: 0.5px solid var(--border);
+    background: var(--bg2);
+    margin-top: 20px;
+  }
+
+  @media (max-width: 600px) {
+    .grid2, .grid3, .grid4 { grid-template-columns: 1fr 1fr; }
+    .main { padding: 14px 14px; }
+    header { padding: 14px 16px; }
+    label { min-width: unset; }
+  }
+</style>
+</head>
+<body>
+
+<header>
+  <div class="logo-mark">
+    <svg viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg">
+      <path d="M2 10 C4 5, 7 15, 10 10 C13 5, 16 15, 18 10" stroke="#0d0f12" stroke-width="2" stroke-linecap="round"/>
+    </svg>
+  </div>
+  <div>
+    <h1>DOPPLER ANALYZER</h1>
+    <p>Medición de velocidad relativa por efecto Doppler</p>
+  </div>
+  <div class="badge">v1.0</div>
+</header>
+
+<div class="main">
+
+  <!-- CONFIG -->
+  <div class="card" style="margin-bottom:12px;">
+    <div class="card-title">Configuración</div>
+    <div class="row">
+      <label>Frecuencia referencia f₀</label>
+      <input type="number" id="refFreqInput" value="440" min="20" max="4000" step="1">
+      <select id="presetSelect">
+        <option value="">Presets</option>
+        <option value="220">La2 — 220 Hz</option>
+        <option value="440">La4 — 440 Hz</option>
+        <option value="880">La5 — 880 Hz</option>
+        <option value="1000">1 000 Hz</option>
+        <option value="2000">2 000 Hz</option>
+        <option value="3000">3 000 Hz</option>
+      </select>
+      <span class="ref-tag" id="refLabel">f₀ = 440 Hz</span>
+    </div>
+    <div class="row">
+      <label>Vel. sonido vₛ (m/s)</label>
+      <input type="range" id="vsSlider" min="300" max="380" value="343" step="1">
+      <span class="val-display" id="vsVal">343</span>
+    </div>
+    <div class="row">
+      <label>Umbral de amplitud</label>
+      <input type="range" id="thrSlider" min="1" max="120" value="20" step="1">
+      <span class="val-display" id="thrVal">20</span>
+    </div>
+    <div class="formula-box">
+      <span>v</span> = vₛ · (f − f₀) / f &nbsp;·&nbsp; <span style="color:var(--muted);font-size:11px;">v &gt; 0 → alejándose &nbsp;|&nbsp; v &lt; 0 → acercándose</span>
+    </div>
+  </div>
+
+  <!-- CONTROLS -->
+  <div class="card" style="margin-bottom:12px;">
+    <div class="card-title">Control</div>
+    <div style="display:flex;gap:10px;flex-wrap:wrap;">
+      <button class="btn primary" id="micBtn" onclick="toggleMic()">
+        <span class="dot" id="micDot"></span>Activar micrófono
+      </button>
+      <button class="btn rec" id="recBtn" onclick="toggleRecord()" disabled>
+        <span class="dot" id="recDot"></span>Iniciar grabación
+      </button>
+      <button class="btn" onclick="clearData()">Limpiar</button>
+      <button class="btn" onclick="saveCSV()" id="saveBtn" disabled>Guardar TXT</button>
+    </div>
+  </div>
+
+  <!-- WAVEFORM -->
+  <div class="card" style="margin-bottom:12px;">
+    <div class="card-title">Forma de onda · micrófono</div>
+    <canvas id="waveCanvas"></canvas>
+  </div>
+
+  <!-- METRICS -->
+  <div class="grid4" style="margin-bottom:12px;">
+    <div class="metric-card">
+      <div class="metric-label">Frecuencia detectada</div>
+      <div class="metric-value" id="mFreq">—</div>
+      <div class="metric-unit">Hz</div>
+    </div>
+    <div class="metric-card amber">
+      <div class="metric-label">Δf = f − f₀</div>
+      <div class="metric-value" id="mDf">—</div>
+      <div class="metric-unit">Hz</div>
+    </div>
+    <div class="metric-card">
+      <div class="metric-label">Velocidad Doppler</div>
+      <div class="metric-value" id="mVel">—</div>
+      <div class="metric-unit">m/s</div>
+    </div>
+    <div class="metric-card">
+      <div class="metric-label">Dirección</div>
+      <div class="metric-value" id="mDir" style="font-size:16px;">—</div>
+      <div class="metric-unit">&nbsp;</div>
+    </div>
+  </div>
+
+  <!-- CHART -->
+  <div class="card" style="margin-bottom:12px;">
+    <div class="card-title">Velocidad Doppler · tiempo real</div>
+    <div style="position:relative;height:220px;">
+      <canvas id="velCanvas"></canvas>
+    </div>
+    <div class="legend">
+      <div class="legend-item"><div class="legend-dot" style="background:#00e5a0;"></div>velocidad (m/s)</div>
+      <div class="legend-item"><div class="legend-dot" style="background:#7a8096;border-top:1px dashed #7a8096;height:0;margin-top:1px;"></div>v = 0</div>
+    </div>
+  </div>
+
+</div>
+
+<div class="status-bar">
+  <span id="statusMsg">Listo · Activa el micrófono para comenzar</span>
+  <span style="margin-left:auto;" id="recCount"></span>
+</div>
+
+<script>
+let audioCtx, analyser, micStream, animId;
+let isRunning = false, isRecording = false;
+let refFreq = 440, vs = 343, threshold = 20;
+let velData = [], timeData = [], freqData = [], t0 = null;
+let velChart = null;
+const MAX_POINTS = 400;
+
+document.getElementById('presetSelect').addEventListener('change', e => {
+  if (e.target.value) { document.getElementById('refFreqInput').value = e.target.value; updateRef(); }
+});
+document.getElementById('refFreqInput').addEventListener('input', updateRef);
+document.getElementById('vsSlider').addEventListener('input', e => { vs = +e.target.value; document.getElementById('vsVal').textContent = vs; });
+document.getElementById('thrSlider').addEventListener('input', e => { threshold = +e.target.value; document.getElementById('thrVal').textContent = threshold; });
+
+function updateRef() {
+  refFreq = +document.getElementById('refFreqInput').value;
+  document.getElementById('refLabel').textContent = 'f₀ = ' + refFreq + ' Hz';
+}
+
+function toggleMic() {
+  if (!isRunning) startMic(); else stopMic();
+}
+
+async function startMic() {
+  try {
+    micStream = await navigator.mediaDevices.getUserMedia({ audio: { echoCancellation: false, noiseSuppression: false, autoGainControl: false } });
+    audioCtx = new AudioContext();
+    analyser = audioCtx.createAnalyser();
+    analyser.fftSize = 8192;
+    analyser.smoothingTimeConstant = 0.5;
+    const src = audioCtx.createMediaStreamSource(micStream);
+    src.connect(analyser);
+    isRunning = true;
+    const btn = document.getElementById('micBtn');
+    btn.classList.add('active');
+    btn.innerHTML = '<span class="dot on" id="micDot"></span>Micrófono activo';
+    document.getElementById('recBtn').disabled = false;
+    document.getElementById('statusMsg').textContent = 'Micrófono activo · Listo para medir';
+    initChart();
+    loop();
+  } catch (e) {
+    alert('No se pudo acceder al micrófono: ' + e.message);
+  }
+}
+
+function stopMic() {
+  isRunning = false; isRecording = false;
+  if (animId) cancelAnimationFrame(animId);
+  if (micStream) micStream.getTracks().forEach(t => t.stop());
+  if (audioCtx) audioCtx.close();
+  const btn = document.getElementById('micBtn');
+  btn.classList.remove('active');
+  btn.innerHTML = '<span class="dot" id="micDot"></span>Activar micrófono';
+  document.getElementById('recBtn').disabled = true;
+  document.getElementById('recBtn').innerHTML = '<span class="dot" id="recDot"></span>Iniciar grabación';
+  document.getElementById('recBtn').classList.remove('active');
+  document.getElementById('statusMsg').textContent = 'Micrófono detenido';
+}
+
+function toggleRecord() {
+  if (!isRecording) {
+    isRecording = true; t0 = performance.now() / 1000;
+    velData = []; timeData = []; freqData = [];
+    document.getElementById('recBtn').innerHTML = '<span class="dot rec" id="recDot"></span>Detener grabación';
+    document.getElementById('recBtn').classList.add('active');
+    document.getElementById('saveBtn').disabled = true;
+    document.getElementById('statusMsg').textContent = 'Grabando...';
+    document.getElementById('recCount').textContent = '';
+  } else {
+    isRecording = false;
+    document.getElementById('recBtn').innerHTML = '<span class="dot" id="recDot"></span>Iniciar grabación';
+    document.getElementById('recBtn').classList.remove('active');
+    if (velData.length > 0) {
+      document.getElementById('saveBtn').disabled = false;
+      document.getElementById('statusMsg').textContent = 'Grabación detenida · ' + velData.length + ' muestras guardadas';
+    } else {
+      document.getElementById('statusMsg').textContent = 'Grabación detenida · sin datos (señal no detectada)';
+    }
+    document.getElementById('recCount').textContent = '';
+  }
+}
+
+function getFrequency(buf, sampleRate) {
+  const n = buf.length;
+  let maxMag = 0, maxBin = 0;
+  const minBin = Math.floor(50 * n / sampleRate);
+  const maxBin2 = Math.floor(5000 * n / sampleRate);
+  for (let i = minBin; i < maxBin2; i++) {
+    if (buf[i] > maxMag) { maxMag = buf[i]; maxBin = i; }
+  }
+  if (maxMag < threshold) return null;
+  let interp = maxBin;
+  if (maxBin > 0 && maxBin < n - 1) {
+    const a = buf[maxBin - 1], b = buf[maxBin], c = buf[maxBin + 1];
+    const denom = a - 2 * b + c;
+    if (denom !== 0) interp = maxBin + 0.5 * (a - c) / denom;
+  }
+  return interp * sampleRate / n;
+}
+
+function dopplerVel(f, f0, vs) {
+  if (!f || f === 0) return null;
+  return vs * (f - f0) / f;
+}
+
+const waveEl = document.getElementById('waveCanvas');
+const waveCtx = waveEl.getContext('2d');
+
+function drawWave(tdBuf) {
+  const W = waveEl.offsetWidth * (window.devicePixelRatio || 1);
+  const H = 80 * (window.devicePixelRatio || 1);
+  waveEl.width = W; waveEl.height = H;
+  waveCtx.clearRect(0, 0, W, H);
+  waveCtx.strokeStyle = '#00e5a0';
+  waveCtx.lineWidth = 1.5;
+  const slice = W / tdBuf.length;
+  waveCtx.beginPath();
+  for (let i = 0; i < tdBuf.length; i++) {
+    const v = (tdBuf[i] / 128.0) - 1.0;
+    const x = slice * i, y = (0.5 + v * 0.45) * H;
+    i === 0 ? waveCtx.moveTo(x, y) : waveCtx.lineTo(x, y);
+  }
+  waveCtx.stroke();
+}
+
+function initChart() {
+  if (velChart) { velChart.destroy(); velChart = null; }
+  const c = document.getElementById('velCanvas');
+  velChart = new Chart(c, {
+    type: 'line',
+    data: {
+      labels: [],
+      datasets: [{
+        label: 'v Doppler (m/s)', data: [],
+        borderColor: '#00e5a0', borderWidth: 2,
+        pointRadius: 0, tension: 0.3, fill: false
+      }]
+    },
+    options: {
+      responsive: true, maintainAspectRatio: false, animation: false,
+      plugins: {
+        legend: { display: false },
+        tooltip: {
+          backgroundColor: '#1c2030',
+          borderColor: 'rgba(255,255,255,0.1)',
+          borderWidth: 0.5,
+          titleColor: '#7a8096',
+          bodyColor: '#e8eaf0',
+          callbacks: {
+            title: items => 't = ' + items[0].label + ' s',
+            label: cb => ' v = ' + cb.parsed.y.toFixed(3) + ' m/s   f = ' + (freqData[cb.dataIndex] || '—') + ' Hz'
+          }
+        }
+      },
+      scales: {
+        x: {
+          ticks: { color: '#7a8096', maxTicksLimit: 8, font: { size: 11, family: "'JetBrains Mono', monospace" } },
+          grid: { color: 'rgba(255,255,255,0.04)' },
+          title: { display: true, text: 'Tiempo (s)', color: '#7a8096', font: { size: 12 } }
+        },
+        y: {
+          ticks: { color: '#7a8096', font: { size: 11, family: "'JetBrains Mono', monospace" }, callback: v => v.toFixed(1) },
+          grid: { color: 'rgba(255,255,255,0.04)' },
+          title: { display: true, text: 'Velocidad (m/s)', color: '#7a8096', font: { size: 12 } }
+        }
+      }
+    }
+  });
+}
+
+function updateChart(t, v) {
+  if (!velChart) return;
+  velChart.data.labels.push(t.toFixed(2));
+  velChart.data.datasets[0].data.push(parseFloat(v.toFixed(4)));
+  if (velChart.data.labels.length > MAX_POINTS) {
+    velChart.data.labels.shift();
+    velChart.data.datasets[0].data.shift();
+  }
+  velChart.update('none');
+}
+
+const tdBuf = new Uint8Array(2048);
+
+function loop() {
+  if (!isRunning) return;
+  animId = requestAnimationFrame(loop);
+
+  const freqBuf = new Float32Array(analyser.frequencyBinCount);
+  analyser.getByteTimeDomainData(tdBuf);
+  analyser.getFloatFrequencyData(freqBuf);
+
+  const linearBuf = new Float32Array(freqBuf.length);
+  for (let i = 0; i < freqBuf.length; i++) linearBuf[i] = Math.pow(10, (freqBuf[i] / 20));
+
+  drawWave(tdBuf);
+
+  const f = getFrequency(linearBuf, audioCtx.sampleRate);
+  const vel = dopplerVel(f, refFreq, vs);
+
+  if (f !== null && vel !== null) {
+    const df = f - refFreq;
+    document.getElementById('mFreq').textContent = f.toFixed(1);
+    document.getElementById('mDf').textContent = (df >= 0 ? '+' : '') + df.toFixed(1);
+    document.getElementById('mVel').textContent = vel.toFixed(2);
+    const mVelEl = document.getElementById('mVel');
+    mVelEl.style.color = vel > 0.5 ? '#00e5a0' : vel < -0.5 ? '#ff5252' : '#e8eaf0';
+    document.getElementById('mDir').textContent = vel > 0.5 ? 'Alejándose' : vel < -0.5 ? 'Acercándose' : 'Estático';
+    document.getElementById('mDir').style.color = vel > 0.5 ? '#00e5a0' : vel < -0.5 ? '#ff5252' : '#7a8096';
+  } else {
+    ['mFreq','mDf','mVel','mDir'].forEach(id => {
+      document.getElementById(id).textContent = '—';
+      document.getElementById(id).style.color = '#e8eaf0';
+    });
+  }
+
+  const now = performance.now() / 1000;
+  if (f !== null && vel !== null) {
+    const relT = t0 ? now - t0 : now;
+    if (isRecording) {
+      timeData.push(relT);
+      freqData.push(parseFloat(f.toFixed(2)));
+      velData.push(parseFloat(vel.toFixed(4)));
+      if (velData.length % 10 === 0) document.getElementById('recCount').textContent = velData.length + ' muestras';
+    }
+    updateChart(relT, vel);
+    if (!freqData.length || isRecording) return;
+    freqData.push(parseFloat(f.toFixed(2)));
+  }
+}
+
+function clearData() {
+  velData = []; timeData = []; freqData = [];
+  if (velChart) { velChart.data.labels = []; velChart.data.datasets[0].data = []; velChart.update(); }
+  document.getElementById('saveBtn').disabled = true;
+  ['mFreq','mDf','mVel','mDir'].forEach(id => {
+    document.getElementById(id).textContent = '—';
+    document.getElementById(id).style.color = '#e8eaf0';
+  });
+  document.getElementById('statusMsg').textContent = 'Datos borrados';
+  document.getElementById('recCount').textContent = '';
+}
+
+function saveCSV() {
+  if (!velData.length) { alert('No hay datos grabados.'); return; }
+  let txt = '# Analizador Doppler — SmartPhysics\n';
+  txt += '# f0 referencia: ' + refFreq + ' Hz\n';
+  txt += '# Velocidad del sonido: ' + vs + ' m/s\n';
+  txt += '# Formula: v = vs * (f - f0) / f\n';
+  txt += '# v > 0 → fuente alejándose | v < 0 → fuente acercándose\n';
+  txt += '#\n';
+  txt += 'Tiempo (s)\tFrecuencia (Hz)\tVelocidad Doppler (m/s)\n';
+  for (let i = 0; i < velData.length; i++) {
+    txt += timeData[i].toFixed(4) + '\t' + freqData[i].toFixed(2) + '\t' + velData[i].toFixed(4) + '\n';
+  }
+  const blob = new Blob([txt], { type: 'text/plain;charset=utf-8' });
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = 'doppler_' + Date.now() + '.txt';
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+}
+</script>
+</body>
+</html>
