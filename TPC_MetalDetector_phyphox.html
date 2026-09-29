@@ -1,0 +1,1066 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="theme-color" content="#0d2461">
+<title>TPC · Metal Detector</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;600;700;900&family=Share+Tech+Mono&display=swap" rel="stylesheet">
+<style>
+/* ═══════════════════════════════════════════════════════
+   THE PHYSICS CLUB — METAL DETECTOR
+   Same design language as TPC Rotation Lab
+═══════════════════════════════════════════════════════ */
+:root {
+  --navy:#0d2461; --navy-mid:#1a3a8f; --red:#c0392b; --red-pale:#fdecea;
+  --bg:#e8eef8; --surface:#ffffff; --surface2:#f2f6fc;
+  --border:#c0ceea; --border-str:#8a9ec8;
+  --teal:#0778a0; --purple:#6d28d9; --orange:#c2410c; --green:#047857; --amber:#d97706;
+  --text:#0d2461; --text-mid:#1e3a7a; --text-dim:#3a5a90; --text-faint:#6a82b0;
+  --header-h:82px; --tab-h:48px;
+  --safe-top:env(safe-area-inset-top,0px); --safe-bot:env(safe-area-inset-bottom,0px);
+}
+*{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent;}
+html,body{width:100%;height:100%;background:var(--bg);color:var(--text);
+  font-family:'Share Tech Mono',monospace;overflow:hidden;overscroll-behavior:none;}
+
+/* HEADER */
+#header{position:fixed;top:0;left:0;right:0;height:calc(var(--header-h) + var(--safe-top));
+  padding:var(--safe-top) 14px 0;background:var(--navy);display:flex;align-items:center;gap:12px;
+  z-index:100;border-bottom:4px solid var(--red);}
+#atom-mark{flex-shrink:0;width:48px;height:48px;background:rgba(255,255,255,.08);border-radius:50%;
+  border:1px solid rgba(255,255,255,.15);display:flex;align-items:center;justify-content:center;}
+#header-wordmark{flex:1;min-width:0;display:flex;flex-direction:column;justify-content:center;}
+#tpc-wordmark-row{display:flex;align-items:baseline;line-height:1;}
+.wm-T,.wm-P,.wm-C{font-family:'Orbitron',sans-serif;font-weight:900;font-size:26px;letter-spacing:-1px;}
+.wm-T,.wm-C{color:#fff}.wm-P{color:var(--red)}
+.wm-sep{width:2px;height:20px;background:rgba(255,255,255,.25);margin:0 9px;align-self:center;flex-shrink:0;}
+#header-app-name{font-family:'Orbitron',sans-serif;font-size:13px;font-weight:600;color:rgba(255,255,255,.95);
+  letter-spacing:2px;text-transform:uppercase;white-space:nowrap;align-self:center;overflow:hidden;text-overflow:ellipsis;}
+#header-tagline{font-size:10px;color:rgba(255,255,255,.72);letter-spacing:2px;margin-top:4px;text-transform:uppercase;}
+#status-pill{display:flex;align-items:center;gap:6px;background:rgba(255,255,255,.1);border:1px solid rgba(255,255,255,.2);
+  border-radius:20px;padding:5px 11px;font-family:'Orbitron',sans-serif;font-size:10px;font-weight:700;letter-spacing:2px;
+  color:#fff;white-space:nowrap;flex-shrink:0;}
+#status-dot{width:7px;height:7px;border-radius:50%;background:rgba(255,255,255,.3);flex-shrink:0;}
+#status-dot.blink{animation:blink 1s step-start infinite;}
+@keyframes blink{50%{opacity:0}}
+#status-dot.live{background:#22d3ee;box-shadow:0 0 7px #22d3ee}
+#status-dot.err{background:#f87171;box-shadow:0 0 7px #f87171}
+#status-dot.cal{background:#fbbf24;box-shadow:0 0 7px #fbbf24}
+#status-dot.demo{background:#a78bfa;box-shadow:0 0 7px #a78bfa}
+#status-dot.alarm{background:#ef4444;box-shadow:0 0 10px #ef4444}
+
+/* BANNER */
+#banner{position:fixed;left:0;right:0;top:calc(var(--header-h) + var(--safe-top));z-index:90;display:none;
+  background:#fffbeb;border-bottom:2px solid #f59e0b;padding:11px 14px;font-size:13px;color:#78350f;line-height:1.5;
+  gap:8px;align-items:flex-start;}
+#banner.shown{display:flex}
+#banner.err-banner{background:var(--red-pale);border-bottom-color:var(--red);color:var(--red)}
+#banner-text{flex:1;white-space:pre-line;word-break:break-word}
+#banner-text button{margin-top:8px;font-family:'Orbitron',sans-serif;font-size:11px;font-weight:700;letter-spacing:1px;
+  background:var(--purple);color:#fff;border:none;border-radius:6px;padding:7px 12px;cursor:pointer;}
+#banner-close{background:none;border:1px solid currentColor;color:inherit;font-size:12px;border-radius:4px;padding:1px 7px;
+  cursor:pointer;flex-shrink:0;font-family:'Share Tech Mono',monospace;}
+
+/* SHELL & TABS */
+#shell{position:fixed;top:calc(var(--header-h) + var(--safe-top));bottom:0;left:0;right:0;display:flex;flex-direction:column;z-index:1;}
+#tab-bar{display:flex;height:var(--tab-h);background:var(--surface);border-bottom:1px solid var(--border);flex-shrink:0;
+  box-shadow:0 1px 4px rgba(13,36,97,.06);}
+.tab-btn{flex:1;display:flex;align-items:center;justify-content:center;font-family:'Orbitron',sans-serif;font-size:11px;
+  font-weight:700;letter-spacing:1.5px;color:var(--text-dim);background:none;border:none;cursor:pointer;
+  border-bottom:3px solid transparent;gap:5px;text-transform:uppercase;}
+.tab-btn.active{color:var(--navy);border-bottom-color:var(--navy)}
+.tab-btn:nth-child(2).active{color:var(--red);border-bottom-color:var(--red)}
+.tab-panel{display:none;flex:1;overflow-y:auto;overflow-x:hidden;}
+.tab-panel.active{display:block}
+.panel-inner{padding:14px 12px calc(20px + var(--safe-bot));max-width:760px;margin:0 auto;}
+
+/* BUTTONS */
+#ctrl-row{display:flex;gap:8px;margin-bottom:14px;}
+.btn{font-family:'Orbitron',sans-serif;font-size:12px;font-weight:700;letter-spacing:1.5px;border-radius:8px;
+  padding:12px 10px;cursor:pointer;transition:transform .1s,background .15s;}
+.btn:active{transform:scale(.97)}
+.btn-primary{flex:1;border:2px solid var(--navy);background:var(--navy);color:#fff;box-shadow:0 2px 8px rgba(13,36,97,.25);}
+.btn-primary.busy{background:var(--amber);border-color:var(--amber);}
+.btn-red{flex:1;border:2px solid var(--red);background:var(--red);color:#fff;box-shadow:0 2px 8px rgba(192,57,43,.3);}
+.btn-red.off{background:var(--surface);color:var(--red);}
+.btn-secondary{border:2px solid var(--border-str);background:var(--surface);color:var(--text-mid);min-width:52px;}
+.btn:disabled{opacity:.45}
+
+/* METER */
+#meter-card{background:var(--surface);border:1px solid var(--border);border-left:4px solid var(--navy);border-radius:10px;
+  margin-bottom:14px;padding:16px 14px 14px;box-shadow:0 2px 12px rgba(13,36,97,.08);user-select:none;-webkit-user-select:none;
+  transition:border-color .2s,background .2s;touch-action:none;}
+#meter-card.alarm{border-left-color:var(--red);background:#fff7f6;}
+#meter-top{display:flex;align-items:flex-end;justify-content:space-between;gap:10px;margin-bottom:12px;}
+#meter-state{font-family:'Orbitron',sans-serif;font-size:20px;font-weight:900;letter-spacing:2px;color:var(--text-faint);}
+#meter-sub{font-size:11px;color:var(--text-dim);margin-top:4px;letter-spacing:.5px;}
+#meter-z{font-family:'Orbitron',sans-serif;font-size:40px;font-weight:900;color:var(--navy);line-height:1;text-align:right;}
+#meter-z small{font-size:14px;font-weight:700;color:var(--text-dim);margin-left:2px;}
+#meter-track{position:relative;height:22px;border-radius:11px;background:var(--surface2);border:1px solid var(--border);overflow:hidden;}
+#meter-fill{position:absolute;left:0;top:0;bottom:0;width:0;background:var(--green);border-radius:11px;transition:width .08s linear,background .2s;}
+#meter-thresh{position:absolute;top:-2px;bottom:-2px;width:3px;left:33.33%;background:var(--navy);}
+#meter-scale{display:flex;justify-content:space-between;font-size:10px;color:var(--text-dim);margin-top:5px;}
+#cal-wrap{display:none;margin-top:14px;}
+#cal-wrap.shown{display:block}
+#cal-label{display:flex;justify-content:space-between;font-size:12px;color:var(--text-mid);margin-bottom:6px;}
+#cal-track{height:8px;border-radius:4px;background:var(--surface2);border:1px solid var(--border);overflow:hidden;}
+#cal-fill{height:100%;width:0;background:var(--amber);}
+#demo-hint{display:none;margin-top:10px;font-size:11px;color:var(--purple);text-align:center;letter-spacing:.5px;}
+#demo-hint.shown{display:block}
+
+/* STATS */
+#stats-strip{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin-bottom:14px;}
+.stat-cell{background:var(--navy);border-radius:8px;padding:10px 4px;text-align:center;box-shadow:0 2px 8px rgba(13,36,97,.2);}
+.stat-cell:nth-child(2){background:var(--navy-mid)}
+.stat-cell:nth-child(3){background:var(--teal)}
+.stat-cell:nth-child(4){background:var(--red)}
+.stat-label{font-size:9px;color:rgba(255,255,255,.8);letter-spacing:1.5px;margin-bottom:5px;text-transform:uppercase;}
+.stat-value{font-family:'Orbitron',sans-serif;font-size:13px;font-weight:700;color:#fff;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+
+/* PLOT CARDS */
+.plot-card{background:var(--surface);border:1px solid var(--border);border-radius:10px;margin-bottom:14px;overflow:hidden;
+  box-shadow:0 2px 12px rgba(13,36,97,.08);}
+.plot-card.card-navy{border-left:4px solid var(--navy)}
+.plot-card.card-red{border-left:4px solid var(--red)}
+.card-header{padding:12px 14px 8px;border-bottom:1px solid var(--border);background:var(--surface2);}
+.card-title{font-family:'Orbitron',sans-serif;font-size:12px;font-weight:700;letter-spacing:1.5px;color:var(--navy);text-transform:uppercase;}
+.card-sub{font-size:11px;color:var(--text-dim);letter-spacing:.5px;margin-top:4px;}
+.plot-canvas{width:calc(100% - 28px);height:190px;display:block;margin:12px 14px;border-radius:6px;background:#f0f4fc;border:1px solid var(--border);}
+.card-footer{display:flex;gap:6px;padding:8px 14px 12px;border-top:1px solid var(--border);}
+.btn-export{flex:1;font-family:'Orbitron',sans-serif;font-size:11px;font-weight:700;letter-spacing:.5px;background:var(--surface2);
+  border:2px solid var(--border-str);color:var(--text-mid);border-radius:6px;padding:8px 4px;cursor:pointer;}
+.btn-export:active{background:var(--navy);color:#fff;border-color:var(--navy);}
+
+/* SETTINGS */
+.settings-section{background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:16px;margin-bottom:14px;
+  box-shadow:0 2px 8px rgba(13,36,97,.06);}
+.s-header{display:flex;align-items:center;gap:10px;margin-bottom:14px;}
+.s-icon{width:30px;height:30px;border-radius:6px;display:flex;align-items:center;justify-content:center;font-size:14px;flex-shrink:0;}
+.s-icon.navy{background:var(--navy)}.s-icon.red{background:var(--red)}.s-icon.teal{background:var(--teal)}.s-icon.purple{background:var(--purple)}
+.settings-section h3{font-family:'Orbitron',sans-serif;font-size:13px;font-weight:700;letter-spacing:1.5px;color:var(--navy);text-transform:uppercase;}
+.slider-row{margin-bottom:14px}.slider-row:last-child{margin-bottom:0}
+.slider-label{display:flex;justify-content:space-between;align-items:center;font-size:13px;margin-bottom:7px;color:var(--text-mid);}
+.slider-label-val{font-family:'Orbitron',sans-serif;font-size:12px;font-weight:700;color:var(--navy);background:var(--bg);
+  border-radius:5px;padding:2px 8px;border:1px solid var(--border);}
+.slider-help{font-size:11px;color:var(--text-dim);margin-top:5px;line-height:1.5;}
+input[type=range]{-webkit-appearance:none;appearance:none;width:100%;height:5px;border-radius:3px;outline:none;cursor:pointer;
+  background:linear-gradient(90deg,var(--navy) var(--fill,0%),var(--border) var(--fill,0%));}
+input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:20px;height:20px;border-radius:50%;background:var(--navy);
+  box-shadow:0 2px 6px rgba(13,36,97,.4);border:2px solid #fff;}
+input[type=range]::-moz-range-thumb{width:20px;height:20px;border-radius:50%;background:var(--navy);border:2px solid #fff;}
+.toggle-row{display:flex;justify-content:space-between;align-items:center;gap:12px;font-size:13px;color:var(--text-mid);
+  padding:8px 0;border-top:1px solid var(--border);}
+.toggle-row:first-of-type{border-top:none}
+.switch{position:relative;width:46px;height:26px;flex-shrink:0;}
+.switch input{opacity:0;width:0;height:0;}
+.switch span{position:absolute;inset:0;background:var(--border);border-radius:13px;transition:.2s;cursor:pointer;}
+.switch span::before{content:'';position:absolute;width:20px;height:20px;left:3px;top:3px;background:#fff;border-radius:50%;transition:.2s;box-shadow:0 1px 3px rgba(0,0,0,.3);}
+.switch input:checked+span{background:var(--navy)}
+.switch input:checked+span::before{transform:translateX(20px)}
+.sensor-table{width:100%;border-collapse:collapse;font-size:12px;}
+.sensor-table tr{border-bottom:1px solid var(--border)}.sensor-table tr:last-child{border-bottom:none}
+.sensor-table td{padding:7px 4px;vertical-align:top;}
+.sensor-table td:first-child{color:var(--text-mid);white-space:nowrap;padding-right:10px;width:42%;font-weight:600;}
+.sensor-table td:last-child{color:var(--navy);font-weight:700;word-break:break-word;}
+.info-note{font-size:12px;color:var(--text-mid);margin-top:10px;padding:10px 12px;background:var(--bg);border-radius:6px;
+  border-left:4px solid var(--teal);line-height:1.7;}
+.info-note strong{color:var(--teal)}
+.phy-row{display:flex;gap:7px;margin:10px 0}.phy-row input{flex:1;min-width:0;border:2px solid var(--border-str);border-radius:7px;padding:9px;font-family:'Share Tech Mono',monospace;color:var(--navy)}.phy-row button{white-space:nowrap}.source-badge{font-family:'Orbitron',sans-serif;font-size:10px;font-weight:700}
+.how-to-item{display:flex;gap:10px;margin-bottom:12px;font-size:12px;line-height:1.6;}
+.how-to-item:last-child{margin-bottom:0}
+.how-to-key{font-family:'Orbitron',sans-serif;font-size:10px;font-weight:700;color:#fff;border-radius:4px;padding:4px 9px;
+  white-space:nowrap;align-self:flex-start;margin-top:1px;letter-spacing:1px;min-width:62px;text-align:center;}
+.k-navy{background:var(--navy)}.k-red{background:var(--red)}.k-teal{background:var(--teal)}.k-purple{background:var(--purple)}
+.how-to-desc{color:var(--text-mid)}
+.about-card{background:var(--navy);border-radius:10px;padding:16px;margin-bottom:14px;box-shadow:0 4px 16px rgba(13,36,97,.25);}
+.about-card-inner{display:flex;align-items:center;gap:12px;margin-bottom:12px;}
+.about-name{font-family:'Orbitron',sans-serif;font-weight:900;font-size:18px;color:#fff;letter-spacing:1px;line-height:1;}
+.about-name span{color:var(--red)}
+.about-tagline-row{display:flex;align-items:center;gap:6px;margin-top:4px;}
+.about-tag-dot{width:5px;height:5px;border-radius:50%;}
+.about-tag-text{font-size:10px;color:rgba(255,255,255,.82);letter-spacing:2px;text-transform:uppercase;}
+.about-divider{height:1px;background:rgba(255,255,255,.18);margin-bottom:12px;}
+.about-row{font-size:12px;color:rgba(255,255,255,.75);margin-bottom:6px;line-height:1.5;}
+.about-row strong{color:#fff}
+.tpc-footer{text-align:center;padding:8px 0 4px;font-size:11px;color:var(--text-faint);letter-spacing:2px;font-family:'Orbitron',sans-serif;text-transform:uppercase;}
+
+/* TOAST */
+#toast{position:fixed;bottom:calc(24px + var(--safe-bot));left:50%;transform:translateX(-50%) translateY(16px);background:var(--navy);
+  color:#fff;border-radius:8px;padding:9px 20px;font-size:12px;letter-spacing:1px;z-index:200;opacity:0;transition:opacity .25s,transform .25s;
+  pointer-events:none;box-shadow:0 4px 20px rgba(13,36,97,.35);white-space:nowrap;}
+#toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
+#toast.err{background:var(--red)}
+</style>
+</head>
+<body>
+
+<header id="header">
+  <div id="atom-mark">
+    <svg viewBox="0 0 44 44" fill="none" xmlns="http://www.w3.org/2000/svg" width="36" height="36">
+      <ellipse cx="22" cy="22" rx="18" ry="7" stroke="#fff" stroke-width="1.2" transform="rotate(-35 22 22)" opacity=".6"/>
+      <ellipse cx="22" cy="22" rx="18" ry="7" stroke="#fff" stroke-width="1.2" transform="rotate(35 22 22)" opacity=".6"/>
+      <ellipse cx="22" cy="22" rx="18" ry="7" stroke="rgba(255,255,255,.4)" stroke-width="1.2"/>
+      <circle cx="22" cy="22" r="3.2" fill="#c0392b"/>
+      <circle cx="22" cy="4.5" r="2.4" fill="#22d3ee"/>
+      <circle cx="38" cy="30" r="2" fill="#c0392b"/>
+      <circle cx="7" cy="30" r="2" fill="rgba(255,255,255,.5)"/>
+    </svg>
+  </div>
+  <div id="header-wordmark">
+    <div id="tpc-wordmark-row">
+      <span class="wm-T">T</span><span class="wm-P">P</span><span class="wm-C">C</span>
+      <div class="wm-sep"></div>
+      <span id="header-app-name">Metal Detector</span>
+    </div>
+    <div id="header-tagline">Discover · Experiment · Inspire</div>
+  </div>
+  <div id="status-pill"><div id="status-dot"></div><span id="status-text">INIT</span></div>
+</header>
+
+<div id="banner"><div id="banner-text"></div><button id="banner-close" onclick="dismissBanner()">✕</button></div>
+
+<div id="shell">
+  <div id="tab-bar">
+    <button class="tab-btn active" data-tab="detect" onclick="switchTab('detect')">🧲 Detector</button>
+    <button class="tab-btn" data-tab="settings" onclick="switchTab('settings')">⚙ Settings</button>
+  </div>
+
+  <!-- DETECTOR PANEL -->
+  <div id="detect-panel" class="tab-panel active"><div class="panel-inner">
+
+    <div id="ctrl-row">
+      <button id="cal-btn" class="btn btn-primary" onclick="startCalibration()">CALIBRATE</button>
+      <button id="det-btn" class="btn btn-red off" onclick="toggleDetect()">DETECT</button>
+      <button id="mute-btn" class="btn btn-secondary" onclick="toggleMute()" aria-label="Mute">🔊</button>
+    </div>
+
+    <div id="meter-card">
+      <div id="meter-top">
+        <div>
+          <div id="meter-state">NOT CALIBRATED</div>
+          <div id="meter-sub">Hold phone away from metal, then CALIBRATE</div>
+        </div>
+        <div id="meter-z">—<small>σ</small></div>
+      </div>
+      <div id="meter-track"><div id="meter-fill"></div><div id="meter-thresh"></div></div>
+      <div id="meter-scale"><span>0</span><span id="scale-k">threshold 3σ</span><span id="scale-max">9σ</span></div>
+      <div id="cal-wrap">
+        <div id="cal-label"><span>Calibrating — keep still, away from metal</span><span id="cal-count">30 s</span></div>
+        <div id="cal-track"><div id="cal-fill"></div></div>
+      </div>
+      <div id="demo-hint">DEMO — press &amp; hold this card to “bring metal near”</div>
+    </div>
+
+    <div id="stats-strip">
+      <div class="stat-cell"><div class="stat-label">|B| now</div><div id="stat-b" class="stat-value">—</div></div>
+      <div class="stat-cell"><div class="stat-label">Mean μ</div><div id="stat-mu" class="stat-value">—</div></div>
+      <div class="stat-cell"><div class="stat-label">Noise σ</div><div id="stat-sigma" class="stat-value">—</div></div>
+      <div class="stat-cell"><div class="stat-label">Δ = |B|−μ</div><div id="stat-d" class="stat-value">—</div></div>
+    </div>
+
+    <div class="plot-card card-red">
+      <div class="card-header">
+        <div class="card-title">Field Magnitude |B| vs Time</div>
+        <div class="card-sub">|B| = √(Bx²+By²+Bz²) · µT · shaded band = μ ± kσ</div>
+      </div>
+      <canvas class="plot-canvas" id="canvas-mag"></canvas>
+    </div>
+
+    <div class="plot-card card-navy">
+      <div class="card-header">
+        <div class="card-title">Components Bx, By, Bz</div>
+        <div class="card-sub">Magnetometer (Generic Sensor API) · µT</div>
+      </div>
+      <canvas class="plot-canvas" id="canvas-xyz"></canvas>
+      <div class="card-footer">
+        <button class="btn-export" onclick="exportCSV()">↓ CSV</button>
+        <button class="btn-export" onclick="clearData()">✕ Clear plots</button>
+      </div>
+    </div>
+
+    <div class="tpc-footer">The Physics Club · Physics for Everyone</div>
+  </div></div>
+
+  <!-- SETTINGS PANEL -->
+  <div id="settings-panel" class="tab-panel"><div class="panel-inner">
+
+    <div class="about-card">
+      <div class="about-card-inner">
+        <svg viewBox="0 0 52 52" fill="none" xmlns="http://www.w3.org/2000/svg" width="52" height="52">
+          <ellipse cx="26" cy="26" rx="22" ry="8.5" stroke="rgba(255,255,255,.5)" stroke-width="1.5" transform="rotate(-35 26 26)"/>
+          <ellipse cx="26" cy="26" rx="22" ry="8.5" stroke="rgba(255,255,255,.5)" stroke-width="1.5" transform="rotate(35 26 26)"/>
+          <ellipse cx="26" cy="26" rx="22" ry="8.5" stroke="rgba(255,255,255,.3)" stroke-width="1.5"/>
+          <circle cx="26" cy="26" r="4" fill="#c0392b"/><circle cx="26" cy="5" r="2.8" fill="#22d3ee"/>
+          <circle cx="45" cy="36" r="2.4" fill="#c0392b"/><circle cx="8" cy="36" r="2.4" fill="rgba(255,255,255,.6)"/>
+        </svg>
+        <div>
+          <div class="about-name">T<span>P</span>C</div>
+          <div class="about-tagline-row">
+            <div class="about-tag-dot" style="background:#c0392b"></div><div class="about-tag-text">Discover</div>
+            <div class="about-tag-dot" style="background:rgba(255,255,255,.3)"></div><div class="about-tag-text">Experiment</div>
+            <div class="about-tag-dot" style="background:#22d3ee"></div><div class="about-tag-text">Inspire</div>
+          </div>
+        </div>
+      </div>
+      <div class="about-divider"></div>
+      <div class="about-row"><strong>Tool</strong> &nbsp;SmartPhysics: Metal Detector</div>
+      <div class="about-row"><strong>Build</strong> &nbsp;TPC smartphone magnetometer experiment</div>
+      <div class="about-row"><strong>API</strong> &nbsp;Generic Sensor API + phyphox REST bridge + Web Audio</div>
+      <div class="about-row"><strong>Requires</strong> &nbsp;Android browser exposing the Generic Sensor Magnetometer · HTTPS · site permission/policy allowed</div>
+    </div>
+
+    <div class="settings-section">
+      <div class="s-header"><div class="s-icon navy">📏</div><h3>Calibration</h3></div>
+      <div class="slider-row">
+        <div class="slider-label"><span>Calibration time</span><span class="slider-label-val" id="calsec-val">30 s</span></div>
+        <input type="range" id="calsec" min="5" max="60" step="5" value="30" oninput="onSetting(this)">
+      </div>
+      <div class="slider-row">
+        <div class="slider-label"><span>Smoothing window</span><span class="slider-label-val" id="smooth-val">5 pts</span></div>
+        <input type="range" id="smooth" min="1" max="30" step="1" value="5" oninput="onSetting(this)">
+        <div class="slider-help">Moving average of |B|. More smoothing = lower σ (more sensitive) but slower response. Recalibrate after changing.</div>
+      </div>
+      <div class="toggle-row">
+        <span>Drift tracking<br><span class="slider-help">Slowly follows the background mean while nothing is detected.</span></span>
+        <label class="switch"><input type="checkbox" id="drift" onchange="onToggle(this)"><span></span></label>
+      </div>
+    </div>
+
+    <div class="settings-section">
+      <div class="s-header"><div class="s-icon red">🔔</div><h3>Detection &amp; Sound</h3></div>
+      <div class="slider-row">
+        <div class="slider-label"><span>Threshold k</span><span class="slider-label-val" id="k-val">3.0 σ</span></div>
+        <input type="range" id="k" min="1" max="10" step="0.5" value="3" oninput="onSetting(this)">
+        <div class="slider-help">Beep when |B − μ| &gt; k·σ. With Gaussian noise, 3σ gives a false alarm ~0.3% of samples.</div>
+      </div>
+      <div class="slider-row">
+        <div class="slider-label"><span>Response gain</span><span class="slider-label-val" id="gain-val">1.0×</span></div>
+        <input type="range" id="gain" min="0.2" max="4" step="0.1" value="1" oninput="onSetting(this)">
+        <div class="slider-help">How fast pitch and beep rate rise with the excess (|Δ|/σ − k).</div>
+      </div>
+      <div class="slider-row">
+        <div class="slider-label"><span>Volume</span><span class="slider-label-val" id="vol-val">60 %</span></div>
+        <input type="range" id="vol" min="0" max="100" step="5" value="60" oninput="onSetting(this)">
+      </div>
+      <div class="toggle-row">
+        <span>Vibrate on detection (Android)</span>
+        <label class="switch"><input type="checkbox" id="vibrate" checked onchange="onToggle(this)"><span></span></label>
+      </div>
+    </div>
+
+    <div class="settings-section">
+      <div class="s-header"><div class="s-icon teal">📡</div><h3>Sensor</h3></div>
+      <div class="slider-row">
+        <div class="slider-label"><span>Requested rate</span><span class="slider-label-val" id="hz-val">60 Hz</span></div>
+        <input type="range" id="hz" min="10" max="100" step="10" value="60" oninput="onSetting(this)">
+      </div>
+      <div class="slider-row">
+        <div class="slider-label"><span>Plot window</span><span class="slider-label-val" id="win-val">20 s</span></div>
+        <input type="range" id="win" min="5" max="60" step="5" value="20" oninput="onSetting(this)">
+      </div>
+      <table class="sensor-table">
+        <tr><td>Source</td><td id="src-display">—</td></tr>
+        <tr><td>Measured rate</td><td id="rate-display">—</td></tr>
+        <tr><td>Calibration</td><td id="calinfo-display">—</td></tr>
+        <tr><td>Magnetometer API</td><td id="api-display">—</td></tr>
+        <tr><td>Permission / policy</td><td id="perm-display">—</td></tr>
+        <tr><td>Last sensor error</td><td id="err-display">—</td></tr>
+      </table>
+      <div class="info-note" style="border-left-color:var(--purple);margin-bottom:10px">
+        <strong style="color:var(--purple)">phyphox bridge</strong> — In phyphox open the <b>Magnetometer / Magnetic Field</b> experiment, start it, enable <b>Remote access</b>, then enter the address shown by phyphox below.
+        <div class="phy-row"><input id="phy-url" value="http://192.168.1.2:8080" inputmode="url" autocomplete="off" spellcheck="false"><button class="btn btn-secondary" onclick="connectPhyphox()">CONNECT</button></div>
+        <div id="phy-status" class="slider-help">Not connected · phone and browser device must be reachable on the same network.</div>
+      </div>
+      <div class="info-note" style="margin-bottom:10px">
+        Uses the <strong>Magnetometer</strong> Generic Sensor API. It only works in a secure HTTPS context and browser support is limited.
+        If the API is present but access fails, check this site's sensor permission and the server's <strong>Permissions-Policy: magnetometer=(self)</strong>.
+        iPhone/iPad browsers do not currently expose this API to ordinary web pages.
+      </div>
+      <button class="btn btn-secondary" style="width:100%;color:var(--purple);border-color:var(--purple)" onclick="startDemo()">▶ Start demo mode (simulated sensor)</button>
+    </div>
+
+    <div class="settings-section">
+      <div class="s-header"><div class="s-icon purple">📖</div><h3>How To Use</h3></div>
+      <div class="how-to-item"><div class="how-to-key k-navy">1 · CAL</div><div class="how-to-desc">Hold the phone still, well away from metal, in the orientation you’ll scan with. Tap CALIBRATE: the app measures μ and σ of |B|.</div></div>
+      <div class="how-to-item"><div class="how-to-key k-red">2 · DETECT</div><div class="how-to-desc">Tap DETECT, then sweep the phone slowly over the area. When |B − μ| exceeds kσ it beeps — higher pitch and faster beeps mean a bigger deviation.</div></div>
+      <div class="how-to-item"><div class="how-to-key k-teal">TIP</div><div class="how-to-desc">Don’t rotate the phone while scanning: phone magnetometers carry a small built-in offset, so rotating alone can change |B|. Translate, don’t twist.</div></div>
+      <div class="how-to-item"><div class="how-to-key k-teal">WHERE</div><div class="how-to-desc">The sensor usually sits near the top of the phone. Find it by moving a small magnet or steel screw around the case.</div></div>
+      <div class="how-to-item"><div class="how-to-key k-purple">RANGE</div><div class="how-to-desc">Expect a few cm for steel screws or nails, more for large iron objects. Aluminium, copper, gold aren’t ferromagnetic — this detector won’t see them.</div></div>
+    </div>
+
+    <div class="tpc-footer" style="padding-bottom:8px">The Physics Club &nbsp;·&nbsp; Physics for Everyone</div>
+  </div></div>
+</div>
+
+<div id="toast"></div>
+
+<script>
+// ═══════════════════════════════════════════════
+// SETTINGS & STATE
+// ═══════════════════════════════════════════════
+const S = { hz:60, calSec:30, k:3, smooth:5, windowSec:20, vol:0.6, gain:1, vibrate:true, drift:false };
+
+let sensor = null, demoTimer = null, phyTimer = null, phyBase = '', phyBuffers = null, source = null;   // source: 'real' | 'demo' | null
+let detecting = false, muted = false;
+const calib = { active:false, start:0, vals:[], skip:0 };
+let mu = null, sigma = null, calN = 0;
+
+let t0 = null;
+const tArr=[], bxArr=[], byArr=[], bzArr=[], bArr=[], bsArr=[];
+const smoothBuf = [];
+let lastBs = null, lastZ = null;
+const hzStamps = [];
+
+const hasMagAPI = () => (typeof window.Magnetometer === 'function');
+const hasUncalMagAPI = () => (typeof window.UncalibratedMagnetometer === 'function');
+let permissionState = 'unknown', lastSensorError = '—';
+
+// ═══════════════════════════════════════════════
+// INIT
+// ═══════════════════════════════════════════════
+function init() {
+  document.querySelectorAll('input[type=range]').forEach(updateSliderFill);
+  document.getElementById('api-display').textContent = hasMagAPI() ? 'Magnetometer exposed' : (hasUncalMagAPI() ? 'uncalibrated only' : 'not exposed');
+  if (!window.isSecureContext) {
+    setStatus('err','ERR');
+    showBanner('⚠ This page must be served over HTTPS for sensor access.', true, true);
+  } else if (!hasMagAPI() && !hasUncalMagAPI()) {
+    setStatus('err','NO SENSOR');
+    showBanner('⚠ This browser does not expose a web Magnetometer API. Try current Chrome/Chromium on Android and open the app from its direct HTTPS address. If the phone has a compass but this still says NO SENSOR, the limitation is the browser/API rather than the detector code.', true, true);
+  } else {
+    setStatus('', 'READY');
+  }
+  window.addEventListener('resize', resizeCanvases);
+  resizeCanvases();
+  setupDemoTouch();
+  try { const saved=localStorage.getItem('tpc_phy_url'); if(saved) document.getElementById('phy-url').value=saved; document.getElementById('phy-url').addEventListener('change',e=>localStorage.setItem('tpc_phy_url',normPhyUrl(e.target.value))); } catch(e){}
+  setInterval(updateInfo, 1000);
+  requestAnimationFrame(loop);
+}
+
+// ═══════════════════════════════════════════════
+// SENSOR
+// ═══════════════════════════════════════════════
+async function ensureSource() {
+  if (source) return true;
+  if (!hasMagAPI() && !hasUncalMagAPI()) {
+    showBanner('⚠ No magnetometer access in this browser. You can still explore the app in demo mode.', true, true);
+    return false;
+  }
+  if (window.top !== window) {
+    showBanner('⚠ This page is running inside an embedded preview. Sensor access is often blocked there. Open the app directly at its HTTPS address and try again.', true, true);
+    return false;
+  }
+  // Permission check (Chrome: Site settings → Motion sensors)
+  if (navigator.permissions) {
+    try {
+      const p = await navigator.permissions.query({ name:'magnetometer' });
+      permissionState = p.state;
+      p.onchange = () => { permissionState = p.state; updateInfo(); };
+      if (p.state === 'denied') {
+        lastSensorError = 'Permission/Permissions-Policy denied';
+        showBanner('⚠ Magnetometer access is denied. This can be a site permission OR the server Permissions-Policy. Open the app directly (not in an embedded preview), allow sensor access for this site if your browser offers that control, and make sure the server does not disable magnetometer.', true);
+        setStatus('err','DENIED'); return false;
+      }
+    } catch (e) { permissionState = 'query unsupported'; /* just try the sensor */ }
+  }
+  // Try several configurations: some devices reject certain frequencies,
+  // and some only expose the uncalibrated sensor.
+  const attempts = [
+    ['Magnetometer', { frequency:Math.min(S.hz, 60), referenceFrame:'device' }],
+    ['Magnetometer', { frequency:20 }],
+    ['Magnetometer', { frequency:10 }],
+    ['Magnetometer', undefined],
+    ['UncalibratedMagnetometer', { frequency:Math.min(S.hz, 60), referenceFrame:'device' }],
+    ['UncalibratedMagnetometer', { frequency:10 }],
+    ['UncalibratedMagnetometer', undefined],
+  ];
+  const log = [];
+  setStatus('cal','STARTING');
+  for (const [cls, opts] of attempts) {
+    if (!(cls in window)) { log.push(cls + ': not exposed'); continue; }
+    const label = cls + (opts && opts.frequency ? ' @' + opts.frequency + 'Hz' : ' (default)');
+    let s = null, got = false, failErr = null;
+    try {
+      s = opts ? new window[cls](opts) : new window[cls]();
+      s.addEventListener('reading', () => { got = true; if (sensor === s) onSample(s.x, s.y, s.z); });
+      s.addEventListener('error', ev => {
+        failErr = ev.error || new Error('unknown sensor error');
+        lastSensorError = (failErr.name || 'Error') + ': ' + (failErr.message || 'unknown sensor error');
+        if (sensor === s && source === 'real') {
+          setStatus('err','ERR');
+          showBanner('⚠ Sensor error: ' + failErr.name + ' — ' + failErr.message, true);
+        }
+      });
+      sensor = s;
+      s.start();
+      const t = performance.now();
+      while (!got && !failErr && performance.now() - t < 3000) await sleep(50);
+      if (got) {
+        source = 'real';
+        sensorLabel = label;
+        setStatus('live','LIVE');
+        dismissBanner();
+        if (cls !== 'Magnetometer') toast('Using ' + label);
+        return true;
+      }
+      log.push(label + ': ' + (failErr ? failErr.name + ' — ' + failErr.message : 'no readings after 3 s'));
+    } catch (err) {
+      lastSensorError = (err.name || 'Error') + ': ' + (err.message || err);
+      log.push(label + ': ' + lastSensorError);
+    }
+    try { s && s.stop(); } catch(e){}
+    sensor = null;
+  }
+  setStatus('err','ERR');
+  lastSensorLog = log.join('\n');
+  showBanner('⚠ Magnetometer could not start. Details:\n' + lastSensorLog +
+    '\n\nSecurityError usually means permission/policy blocking. NotReadableError usually means the browser cannot obtain the physical sensor. If every attempt times out, the API may be exposed but not connected to usable hardware.', true, true);
+  return false;
+}
+let sensorLabel = '', lastSensorLog = '';
+
+function stopSource() {
+  if (sensor) { try { sensor.stop(); } catch(e){} sensor = null; }
+  if (demoTimer) { clearInterval(demoTimer); demoTimer = null; }
+  if (phyTimer) { clearInterval(phyTimer); phyTimer = null; }
+  source = null;
+  document.getElementById('demo-hint').classList.remove('shown');
+}
+
+async function restartSource() {
+  const was = source;
+  stopSource();
+  if (was === 'real') await ensureSource();
+  else if (was === 'demo') startDemo(true);
+  else if (was === 'phyphox') await connectPhyphox(true);
+}
+
+// ═══════════════════════════════════════════════
+// PHYPHOX REST BRIDGE
+// ═══════════════════════════════════════════════
+function normPhyUrl(v) {
+  v = (v || '').trim().replace(/\/+$/, '');
+  if (v && !/^https?:\/\//i.test(v)) v = 'http://' + v;
+  return v;
+}
+function phyLast(obj, name) {
+  const a = obj?.buffer?.[name]?.buffer;
+  if (!Array.isArray(a) || !a.length) return null;
+  const v = Number(a[a.length-1]); return Number.isFinite(v) ? v : null;
+}
+function discoverMagBuffers(cfg) {
+  const inputs = Array.isArray(cfg?.inputs) ? cfg.inputs : [];
+  for (const inp of inputs) {
+    const text = JSON.stringify(inp).toLowerCase();
+    if (!text.includes('magnet')) continue;
+    const outs = inp.outputs || inp.output || inp.buffers || {};
+    const get = k => typeof outs?.[k] === 'string' ? outs[k] : (outs?.[k]?.buffer || outs?.[k]?.name);
+    const x=get('x'), y=get('y'), z=get('z'); if(x&&y&&z) return {x,y,z};
+  }
+  const names=(cfg?.buffers||[]).map(b=>typeof b==='string'?b:b.name).filter(Boolean);
+  const find = axis => names.find(n => new RegExp('^(mag|magnetic).*'+axis+'$','i').test(n)) || names.find(n => new RegExp('mag.*'+axis,'i').test(n));
+  const x=find('x'),y=find('y'),z=find('z'); return x&&y&&z?{x,y,z}:null;
+}
+async function connectPhyphox(silent=false) {
+  const inp=document.getElementById('phy-url'); const st=document.getElementById('phy-status');
+  const base=normPhyUrl(inp?.value || phyBase); if(!base){ toast('Enter the phyphox Remote access address',true); return false; }
+  stopSource(); phyBase=base; if(inp) inp.value=base; if(st) st.textContent='Connecting…'; setStatus('cal','PHY…');
+  try {
+    const r=await fetch(base+'/config',{cache:'no-store'}); if(!r.ok) throw new Error('HTTP '+r.status+' from /config');
+    const cfg=await r.json(); phyBuffers=discoverMagBuffers(cfg);
+    if(!phyBuffers) throw new Error('No x/y/z magnetometer buffers found. Open the Magnetometer/Magnetic Field experiment in phyphox first.');
+    const q=[phyBuffers.x,phyBuffers.y,phyBuffers.z].map(encodeURIComponent).join('&');
+    async function poll(){
+      try{
+        const rr=await fetch(base+'/get?'+q,{cache:'no-store'}); if(!rr.ok) throw new Error('HTTP '+rr.status);
+        const d=await rr.json(); const x=phyLast(d,phyBuffers.x),y=phyLast(d,phyBuffers.y),z=phyLast(d,phyBuffers.z);
+        if(x!==null&&y!==null&&z!==null) onSample(x,y,z);
+        if(st) st.textContent=`Connected · ${phyBuffers.x}, ${phyBuffers.y}, ${phyBuffers.z}`;
+      }catch(e){ lastSensorError='phyphox: '+e.message; if(st) st.textContent='Connection lost: '+e.message; }
+    }
+    source='phyphox'; sensorLabel='phyphox REST · '+phyBuffers.x+'/'+phyBuffers.y+'/'+phyBuffers.z; lastSensorError='—';
+    await poll(); phyTimer=setInterval(poll,100); setStatus('live','PHY'); dismissBanner(); switchTab('detect');
+    if(!silent) toast('phyphox magnetometer connected'); return true;
+  } catch(e) {
+    source=null; lastSensorError='phyphox: '+e.message; if(st) st.textContent='Could not connect: '+e.message; setStatus('err','PHY ERR');
+    showBanner('⚠ phyphox connection failed: '+e.message+'\n\nCheck Remote access is ON, the Magnetometer experiment is open, and use the exact address shown by phyphox.',true,true); return false;
+  }
+}
+
+// ═══════════════════════════════════════════════
+// DEMO MODE — simulated magnetometer
+// ═══════════════════════════════════════════════
+let demoHold = false, demoBump = 0;
+function gauss() { let u=0,v=0; while(!u)u=Math.random(); while(!v)v=Math.random(); return Math.sqrt(-2*Math.log(u))*Math.cos(2*Math.PI*v); }
+
+function startDemo(silent) {
+  stopSource();
+  source = 'demo';
+  demoTimer = setInterval(() => {
+    demoBump += ((demoHold ? 6 : 0) - demoBump) * 0.06;
+    const n = () => gauss() * 0.35;
+    onSample(21 + n() + demoBump*0.5, -5 + n() + demoBump*0.2, -42 + n() - demoBump*0.9);
+  }, 1000 / S.hz);
+  setStatus('demo','DEMO');
+  document.getElementById('demo-hint').classList.add('shown');
+  dismissBanner();
+  switchTab('detect');
+  if (!silent) toast('Demo mode — simulated sensor');
+}
+
+function setupDemoTouch() {
+  const card = document.getElementById('meter-card');
+  const on  = e => { if (source === 'demo') { demoHold = true; e.preventDefault(); } };
+  const off = () => { demoHold = false; };
+  card.addEventListener('pointerdown', on);
+  ['pointerup','pointercancel','pointerleave'].forEach(ev => card.addEventListener(ev, off));
+}
+
+// ═══════════════════════════════════════════════
+// SAMPLE PROCESSING
+// ═══════════════════════════════════════════════
+function onSample(x, y, z) {
+  if (x == null || y == null || z == null) return;
+  const now = performance.now();
+  if (t0 === null) t0 = now;
+  const t = (now - t0) / 1000;
+  const B = Math.hypot(x, y, z);
+
+  smoothBuf.push(B);
+  while (smoothBuf.length > S.smooth) smoothBuf.shift();
+  let sum = 0; for (const v of smoothBuf) sum += v;
+  const Bs = sum / smoothBuf.length;
+  lastBs = Bs;
+
+  tArr.push(t); bxArr.push(x); byArr.push(y); bzArr.push(z); bArr.push(B); bsArr.push(Bs);
+  while (tArr.length > 2 && t - tArr[0] > S.windowSec) {
+    [tArr,bxArr,byArr,bzArr,bArr,bsArr].forEach(a => a.shift());
+  }
+
+  hzStamps.push(now); if (hzStamps.length > 60) hzStamps.shift();
+
+  if (calib.active) {
+    if (calib.skip > 0) calib.skip--;
+    else calib.vals.push(Bs);
+    if (now - calib.start >= S.calSec * 1000) finishCalibration();
+  }
+
+  if (mu !== null) {
+    lastZ = (Bs - mu) / sigma;
+    if (S.drift && !calib.active && Math.abs(lastZ) < S.k * 0.5) mu += (Bs - mu) * 0.002;
+  }
+}
+
+// ═══════════════════════════════════════════════
+// CALIBRATION
+// ═══════════════════════════════════════════════
+async function startCalibration() {
+  ensureAudio(); keepAwake();
+  if (calib.active) { cancelCalibration(); return; }
+  if (!(await ensureSource())) return;
+  calib.active = true;
+  calib.start = performance.now();
+  calib.vals = [];
+  calib.skip = S.smooth + 5;         // let the smoothing buffer settle
+  const b = document.getElementById('cal-btn');
+  b.textContent = 'CANCEL'; b.classList.add('busy');
+  document.getElementById('cal-wrap').classList.add('shown');
+  setStatus('cal','CAL');
+  toast('Calibrating — keep the phone still');
+}
+
+function cancelCalibration() {
+  calib.active = false; calib.vals = [];
+  resetCalUI();
+  setStatus(source === 'demo' ? 'demo' : 'live', source === 'demo' ? 'DEMO' : source === 'phyphox' ? 'PHY' : 'LIVE');
+  toast('Calibration cancelled', true);
+}
+
+function finishCalibration() {
+  const v = calib.vals, n = v.length;
+  calib.active = false;
+  resetCalUI();
+  if (n < 10) {
+    toast('Too few samples — try again', true);
+    setStatus('err','ERR');
+    return;
+  }
+  const m = v.reduce((a,b) => a+b, 0) / n;
+  const sd = Math.sqrt(v.reduce((a,b) => a + (b-m)*(b-m), 0) / (n - 1));
+  mu = m;
+  sigma = Math.max(sd, 0.02);        // floor: some sensors quantise to identical values
+  calN = n;
+  lastZ = null;
+  setStatus(source === 'demo' ? 'demo' : 'live', source === 'demo' ? 'DEMO' : source === 'phyphox' ? 'PHY' : 'LIVE');
+  toast(`μ = ${mu.toFixed(2)} µT · σ = ${sigma.toFixed(3)} µT`);
+  if (!detecting) toggleDetect();
+}
+
+function resetCalUI() {
+  const b = document.getElementById('cal-btn');
+  b.textContent = 'CALIBRATE'; b.classList.remove('busy');
+  document.getElementById('cal-wrap').classList.remove('shown');
+  document.getElementById('cal-fill').style.width = '0';
+}
+
+// ═══════════════════════════════════════════════
+// DETECTION & AUDIO
+// ═══════════════════════════════════════════════
+function toggleDetect() {
+  ensureAudio(); keepAwake();
+  if (mu === null) { toast('Calibrate first', true); return; }
+  detecting = !detecting;
+  const b = document.getElementById('det-btn');
+  b.textContent = detecting ? 'STOP' : 'DETECT';
+  b.classList.toggle('off', !detecting);
+  toast(detecting ? 'Detecting — sweep slowly' : 'Detection stopped');
+}
+
+function toggleMute() {
+  ensureAudio();
+  muted = !muted;
+  document.getElementById('mute-btn').textContent = muted ? '🔇' : '🔊';
+}
+
+let actx = null, master = null, nextBeep = 0;
+function ensureAudio() {
+  try {
+    if (!actx) {
+      actx = new (window.AudioContext || window.webkitAudioContext)();
+      master = actx.createGain();
+      master.gain.value = S.vol;
+      master.connect(actx.destination);
+      setInterval(audioTick, 20);
+    }
+    if (actx.state === 'suspended') actx.resume();
+  } catch (e) { /* no audio available */ }
+}
+
+function excess() {
+  if (!detecting || calib.active || lastZ === null) return 0;
+  return Math.max(0, Math.abs(lastZ) - S.k);
+}
+
+function audioTick() {
+  const e = excess();
+  if (e <= 0 || !actx) return;
+  const now = actx.currentTime;
+  if (now < nextBeep) return;
+  const g = e * S.gain;
+  // Geiger-style: pitch and repetition both rise with the excess deviation
+  const freq     = Math.min(2800, 380 + 90 * g);
+  const interval = Math.max(0.055, 0.45 / (1 + 0.45 * g));
+  if (!muted) beep(freq, Math.min(0.07, interval * 0.55));
+  if (S.vibrate && navigator.vibrate && interval > 0.09) navigator.vibrate(25);
+  nextBeep = now + interval;
+}
+
+function beep(freq, dur) {
+  const t = actx.currentTime + 0.005;
+  const o = actx.createOscillator(), g = actx.createGain();
+  o.type = 'triangle';
+  o.frequency.setValueAtTime(freq, t);
+  g.gain.setValueAtTime(0.0001, t);
+  g.gain.exponentialRampToValueAtTime(1, t + 0.004);
+  g.gain.exponentialRampToValueAtTime(0.0001, t + dur);
+  o.connect(g); g.connect(master);
+  o.start(t); o.stop(t + dur + 0.02);
+}
+
+// Keep the screen awake while scanning
+let wakeLock = null;
+async function keepAwake() {
+  try {
+    if ('wakeLock' in navigator && !wakeLock) {
+      wakeLock = await navigator.wakeLock.request('screen');
+      wakeLock.addEventListener('release', () => { wakeLock = null; });
+    }
+  } catch (e) {}
+}
+document.addEventListener('visibilitychange', () => {
+  if (document.visibilityState === 'visible' && (detecting || calib.active)) keepAwake();
+});
+
+// ═══════════════════════════════════════════════
+// UI LOOP
+// ═══════════════════════════════════════════════
+let lastDraw = 0;
+function loop(ts) {
+  requestAnimationFrame(loop);
+  if (ts - lastDraw < 50) return;
+  lastDraw = ts;
+  updateMeter(); updateStats();
+  drawMag(); drawXYZ();
+}
+
+function updateMeter() {
+  const stateEl = document.getElementById('meter-state');
+  const subEl   = document.getElementById('meter-sub');
+  const zEl     = document.getElementById('meter-z');
+  const fill    = document.getElementById('meter-fill');
+  const card    = document.getElementById('meter-card');
+  const kMax    = S.k * 3;
+
+  if (calib.active) {
+    const el = (performance.now() - calib.start) / 1000;
+    document.getElementById('cal-fill').style.width = Math.min(100, el / S.calSec * 100) + '%';
+    document.getElementById('cal-count').textContent = Math.max(0, S.calSec - el).toFixed(0) + ' s';
+    stateEl.textContent = 'CALIBRATING'; stateEl.style.color = 'var(--amber)';
+    subEl.textContent = `${calib.vals.length} samples collected`;
+    zEl.innerHTML = '—<small>σ</small>'; fill.style.width = '0'; card.classList.remove('alarm');
+    return;
+  }
+  if (mu === null) {
+    stateEl.textContent = 'NOT CALIBRATED'; stateEl.style.color = 'var(--text-faint)';
+    subEl.textContent = source ? 'Hold still, away from metal, then CALIBRATE' : 'Tap CALIBRATE to start the sensor';
+    zEl.innerHTML = '—<small>σ</small>'; fill.style.width = '0'; card.classList.remove('alarm');
+    return;
+  }
+  const z = lastZ ?? 0, az = Math.abs(z);
+  zEl.innerHTML = az.toFixed(1) + '<small>σ</small>';
+  fill.style.width = Math.min(100, az / kMax * 100) + '%';
+  let label, col;
+  if (az < S.k)          { label = 'CLEAR';  col = 'var(--green)'; }
+  else if (az < 2*S.k)   { label = 'WEAK';   col = 'var(--amber)'; }
+  else                   { label = 'STRONG'; col = 'var(--red)'; }
+  if (!detecting) { label = 'STANDBY'; col = 'var(--text-faint)'; }
+  stateEl.textContent = label; stateEl.style.color = col;
+  fill.style.background = az < S.k ? 'var(--green)' : az < 2*S.k ? 'var(--amber)' : 'var(--red)';
+  subEl.textContent = detecting ? `Δ = ${(lastBs - mu >= 0 ? '+' : '')}${(lastBs - mu).toFixed(2)} µT` : 'Tap DETECT to enable the beeper';
+  const alarm = detecting && az >= S.k;
+  card.classList.toggle('alarm', alarm);
+  if (source) {
+    if (alarm) setStatus('alarm blink', 'METAL');
+    else setStatus(source === 'demo' ? 'demo' : 'live', source === 'demo' ? 'DEMO' : source === 'phyphox' ? 'PHY' : 'LIVE');
+  }
+}
+
+function updateStats() {
+  document.getElementById('stat-b').textContent     = lastBs !== null ? lastBs.toFixed(2) + ' µT' : '—';
+  document.getElementById('stat-mu').textContent    = mu !== null ? mu.toFixed(2) + ' µT' : '—';
+  document.getElementById('stat-sigma').textContent = sigma !== null ? sigma.toFixed(3) + ' µT' : '—';
+  const d = (mu !== null && lastBs !== null) ? lastBs - mu : null;
+  document.getElementById('stat-d').textContent     = d !== null ? (d >= 0 ? '+' : '') + d.toFixed(2) + ' µT' : '—';
+}
+
+function updateInfo() {
+  const n = hzStamps.length;
+  document.getElementById('rate-display').textContent =
+    n > 5 ? ((n - 1) / ((hzStamps[n-1] - hzStamps[0]) / 1000)).toFixed(1) + ' Hz' : '—';
+  document.getElementById('src-display').textContent =
+    source === 'real' || source === 'phyphox' ? sensorLabel : source === 'demo' ? 'Simulated (demo)' : '—';
+  document.getElementById('calinfo-display').textContent =
+    mu !== null ? `μ ${mu.toFixed(2)} µT · σ ${sigma.toFixed(3)} µT · N ${calN}` : 'not calibrated';
+  const pe = document.getElementById('perm-display'); if (pe) pe.textContent = permissionState;
+  const ee = document.getElementById('err-display'); if (ee) ee.textContent = lastSensorError;
+  const ae = document.getElementById('api-display'); if (ae) ae.textContent = hasMagAPI() ? 'Magnetometer exposed' : (hasUncalMagAPI() ? 'uncalibrated only' : 'not exposed');
+}
+
+// ═══════════════════════════════════════════════
+// PLOTTING
+// ═══════════════════════════════════════════════
+const cMag = document.getElementById('canvas-mag');
+const cXYZ = document.getElementById('canvas-xyz');
+
+function resizeCanvases() {
+  const pr = window.devicePixelRatio || 1;
+  [cMag, cXYZ].forEach(c => { c.width = c.offsetWidth * pr; c.height = c.offsetHeight * pr; });
+}
+
+function drawPlot(canvas, series, opts = {}) {
+  const ctx = canvas.getContext('2d'), pr = window.devicePixelRatio || 1;
+  const W = canvas.width, H = canvas.height;
+  ctx.clearRect(0,0,W,H);
+  ctx.fillStyle = '#f0f4fc'; ctx.fillRect(0,0,W,H);
+  const ml=50*pr, mr=12*pr, mt=14*pr, mb=26*pr, pw=W-ml-mr, ph=H-mt-mb;
+  if (pw < 10 || ph < 10) return;
+  if (tArr.length < 2) {
+    ctx.fillStyle = '#4a6a9a'; ctx.font = `bold ${11*pr}px "Share Tech Mono"`; ctx.textAlign = 'center';
+    ctx.fillText('— No data — tap CALIBRATE to begin —', W/2, H/2);
+    return;
+  }
+  const xMax = tArr[tArr.length-1], xMin = Math.max(tArr[0], xMax - S.windowSec);
+  let yMin = Infinity, yMax = -Infinity;
+  series.forEach(s => s.arr.forEach(v => { if (v < yMin) yMin = v; if (v > yMax) yMax = v; }));
+  if (opts.band) { yMin = Math.min(yMin, opts.band[0]); yMax = Math.max(yMax, opts.band[1]); }
+  if (yMin === yMax) { yMin -= 0.5; yMax += 0.5; }
+  const pad = (yMax - yMin) * 0.12; yMin -= pad; yMax += pad;
+  const tx = v => ml + (v - xMin) / (xMax - xMin || 1) * pw;
+  const ty = v => mt + (1 - (v - yMin) / (yMax - yMin)) * ph;
+
+  // Band μ ± kσ
+  if (opts.band) {
+    ctx.fillStyle = 'rgba(4,120,87,0.12)';
+    ctx.fillRect(ml, ty(opts.band[1]), pw, ty(opts.band[0]) - ty(opts.band[1]));
+  }
+  // Grid
+  const xt = niceTicks(xMin, xMax, 5), yt = niceTicks(yMin, yMax, 4);
+  ctx.strokeStyle = 'rgba(100,130,190,0.35)'; ctx.lineWidth = .75*pr;
+  xt.forEach(x => { ctx.beginPath(); ctx.moveTo(tx(x),mt); ctx.lineTo(tx(x),mt+ph); ctx.stroke(); });
+  yt.forEach(y => { ctx.beginPath(); ctx.moveTo(ml,ty(y)); ctx.lineTo(ml+pw,ty(y)); ctx.stroke(); });
+  // Mean line
+  if (opts.mean != null) {
+    ctx.strokeStyle = 'rgba(4,120,87,0.8)'; ctx.setLineDash([5*pr,4*pr]); ctx.lineWidth = 1.3*pr;
+    ctx.beginPath(); ctx.moveTo(ml,ty(opts.mean)); ctx.lineTo(ml+pw,ty(opts.mean)); ctx.stroke(); ctx.setLineDash([]);
+  }
+  // Labels
+  ctx.fillStyle = '#2a4a80'; ctx.font = `bold ${8*pr}px "Share Tech Mono"`;
+  ctx.textAlign = 'center'; xt.forEach(x => ctx.fillText(fmt(x), tx(x), mt+ph+17*pr));
+  ctx.textAlign = 'right';  yt.forEach(y => ctx.fillText(fmt(y), ml-5*pr, ty(y)+3*pr));
+  // Series
+  ctx.save(); ctx.beginPath(); ctx.rect(ml,mt,pw,ph); ctx.clip();
+  series.forEach(s => {
+    ctx.globalAlpha = s.alpha ?? 1; ctx.strokeStyle = s.color; ctx.lineWidth = (s.width ?? 2) * pr;
+    ctx.beginPath();
+    s.arr.forEach((v,i) => { const x = tx(tArr[i]), y = ty(v); i ? ctx.lineTo(x,y) : ctx.moveTo(x,y); });
+    ctx.stroke();
+    if (!s.noDot) {
+      const x = tx(tArr[tArr.length-1]), y = ty(s.arr[s.arr.length-1]);
+      ctx.globalAlpha = 1;
+      ctx.fillStyle = '#fff'; ctx.beginPath(); ctx.arc(x,y,5*pr,0,Math.PI*2); ctx.fill();
+      ctx.fillStyle = s.color; ctx.beginPath(); ctx.arc(x,y,3.5*pr,0,Math.PI*2); ctx.fill();
+    }
+  });
+  ctx.globalAlpha = 1; ctx.restore();
+  // Legend
+  let ly = mt + 13*pr;
+  series.filter(s => s.label).forEach(s => {
+    ctx.fillStyle = s.color; ctx.fillRect(ml+pw-64*pr, ly-5.5*pr, 13*pr, 3.5*pr);
+    ctx.font = `bold ${8*pr}px "Share Tech Mono"`; ctx.textAlign = 'left';
+    ctx.fillText(s.label, ml+pw-48*pr, ly); ly += 12*pr;
+  });
+  ctx.strokeStyle = 'rgba(13,36,97,0.15)'; ctx.lineWidth = pr; ctx.strokeRect(ml,mt,pw,ph);
+}
+
+function drawMag() {
+  const opts = {};
+  if (mu !== null) { opts.mean = mu; opts.band = [mu - S.k*sigma, mu + S.k*sigma]; }
+  drawPlot(cMag, [
+    { arr:bArr,  color:'#c0392b', width:1, alpha:.35, noDot:true, label:'|B| raw' },
+    { arr:bsArr, color:'#0d2461', width:2, label:'|B| smooth' },
+  ], opts);
+}
+function drawXYZ() {
+  drawPlot(cXYZ, [
+    { arr:bxArr, color:'#0891b2', label:'Bx' },
+    { arr:byArr, color:'#7c3aed', label:'By' },
+    { arr:bzArr, color:'#ea580c', label:'Bz' },
+  ]);
+}
+
+// ═══════════════════════════════════════════════
+// SETTINGS HANDLERS
+// ═══════════════════════════════════════════════
+function onSetting(el) {
+  const v = parseFloat(el.value);
+  updateSliderFill(el);
+  switch (el.id) {
+    case 'calsec': S.calSec = v; setVal('calsec-val', v + ' s'); break;
+    case 'smooth': S.smooth = v; setVal('smooth-val', v + ' pts'); break;
+    case 'k':      S.k = v; setVal('k-val', v.toFixed(1) + ' σ');
+                   setVal('scale-k', 'threshold ' + v.toFixed(1) + 'σ'); setVal('scale-max', (v*3).toFixed(1) + 'σ'); break;
+    case 'gain':   S.gain = v; setVal('gain-val', v.toFixed(1) + '×'); break;
+    case 'vol':    S.vol = v / 100; setVal('vol-val', v + ' %'); if (master) master.gain.value = S.vol; break;
+    case 'win':    S.windowSec = v; setVal('win-val', v + ' s'); break;
+    case 'hz':     S.hz = v; setVal('hz-val', v + ' Hz'); clearTimeout(onSetting._t);
+                   onSetting._t = setTimeout(() => { if (source === 'real' || source === 'demo') restartSource(); }, 400); break;
+  }
+}
+function onToggle(el) { S[el.id] = el.checked; }
+function setVal(id, t) { document.getElementById(id).textContent = t; }
+function updateSliderFill(el) {
+  el.style.setProperty('--fill', ((el.value - el.min) / (el.max - el.min) * 100).toFixed(1) + '%');
+}
+
+// ═══════════════════════════════════════════════
+// DATA
+// ═══════════════════════════════════════════════
+function clearData() {
+  [tArr,bxArr,byArr,bzArr,bArr,bsArr].forEach(a => a.length = 0);
+  t0 = null;
+  toast('Plots cleared');
+}
+
+function exportCSV() {
+  if (!tArr.length) { toast('No data to export', true); return; }
+  const head = `# TPC Metal Detector · mu_uT=${mu ?? ''} · sigma_uT=${sigma ?? ''} · k=${S.k} · smooth=${S.smooth}\n` +
+               'time_s,Bx_uT,By_uT,Bz_uT,B_uT,B_smooth_uT,z_sigma';
+  const rows = tArr.map((t,i) => [t.toFixed(4), bxArr[i].toFixed(4), byArr[i].toFixed(4), bzArr[i].toFixed(4),
+    bArr[i].toFixed(4), bsArr[i].toFixed(4), mu !== null ? ((bsArr[i]-mu)/sigma).toFixed(3) : ''].join(','));
+  const blob = new Blob([[head, ...rows].join('\n')], { type:'text/csv' });
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = `TPC_metal_${Date.now()}.csv`;
+  a.click();
+  toast('CSV saved ↓');
+}
+
+// ═══════════════════════════════════════════════
+// STATUS / BANNER / TOAST / TABS
+// ═══════════════════════════════════════════════
+function setStatus(cls, label) {
+  document.getElementById('status-dot').className = cls;
+  document.getElementById('status-text').textContent = label;
+}
+function showBanner(msg, isErr, withDemo) {
+  const b = document.getElementById('banner'), t = document.getElementById('banner-text');
+  t.textContent = msg;
+  if (withDemo) {
+    t.appendChild(document.createElement('br'));
+    const btn = document.createElement('button');
+    btn.textContent = '▶ TRY DEMO MODE';
+    btn.onclick = () => startDemo();
+    t.appendChild(btn);
+  }
+  b.className = 'shown' + (isErr ? ' err-banner' : '');
+  updateShellTop();
+}
+function dismissBanner() {
+  document.getElementById('banner').className = '';
+  updateShellTop();
+}
+function updateShellTop() {
+  const b = document.getElementById('banner');
+  const bh = b.classList.contains('shown') ? b.offsetHeight : 0;
+  document.getElementById('shell').style.top = `calc(var(--header-h) + var(--safe-top) + ${bh}px)`;
+}
+let toastTimer = null;
+function toast(msg, isErr) {
+  const el = document.getElementById('toast');
+  el.textContent = msg; el.className = 'show' + (isErr ? ' err' : '');
+  clearTimeout(toastTimer); toastTimer = setTimeout(() => el.className = '', 2400);
+}
+function switchTab(name) {
+  document.querySelectorAll('.tab-btn').forEach(b => b.classList.toggle('active', b.dataset.tab === name));
+  document.querySelectorAll('.tab-panel').forEach(p => p.classList.toggle('active', p.id === name + '-panel'));
+  if (name === 'detect') setTimeout(resizeCanvases, 0);
+}
+
+// ═══════════════════════════════════════════════
+// UTILITIES
+// ═══════════════════════════════════════════════
+function sleep(ms) { return new Promise(r => setTimeout(r, ms)); }
+function fmt(v) {
+  const a = Math.abs(v); if (a === 0) return '0';
+  if (a >= 100) return v.toFixed(0); if (a >= 10) return v.toFixed(1);
+  if (a >= 1) return v.toFixed(2); return v.toFixed(3);
+}
+function niceTicks(min, max, count) {
+  const span = max - min; if (!span) return [min];
+  const rough = span / count, mag = Math.pow(10, Math.floor(Math.log10(rough)));
+  const norm = rough / mag, nice = norm < 1.5 ? 1 : norm < 3.5 ? 2 : norm < 7.5 ? 5 : 10;
+  const step = nice * mag, ticks = [];
+  for (let t = Math.ceil(min / step) * step; t <= max + step * 0.01; t += step) {
+    ticks.push(parseFloat(t.toFixed(10))); if (ticks.length > 20) break;
+  }
+  return ticks;
+}
+
+window.addEventListener('load', () => { init(); setTimeout(resizeCanvases, 300); });
+</script>
+</body>
+</html>
