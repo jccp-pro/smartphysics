@@ -1,0 +1,334 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<title>TPC · Impedance Lab</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;600;700;900&family=Share+Tech+Mono&display=swap" rel="stylesheet">
+<style>
+:root{
+  --navy:#0d2461; --navy-mid:#1a3a8f; --red:#c0392b; --red-lt:#e04030;
+  --bg:#e8eef8; --surface:#fff; --surface2:#f2f6fc; --border:#c0ceea; --border-str:#8a9ec8;
+  --teal:#0778a0; --cyan:#0891b2; --purple:#6d28d9; --orange:#c2410c; --green:#047857;
+  --text:#0d2461; --text-mid:#1e3a7a; --text-dim:#3a5a90; --text-faint:#6a82b0;
+  --header-h:82px; --tab-h:48px; --safe-top:env(safe-area-inset-top,0px); --safe-bot:env(safe-area-inset-bottom,0px);
+}
+*{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
+html,body{width:100%;height:100%;background:var(--bg);color:var(--text);font-family:'Share Tech Mono',monospace;overflow:hidden;overscroll-behavior:none}
+button,input,select{font:inherit}
+#header{position:fixed;top:0;left:0;right:0;height:calc(var(--header-h) + var(--safe-top));padding-top:var(--safe-top);background:var(--navy);display:flex;align-items:center;padding-left:14px;padding-right:14px;z-index:100;gap:12px;border-bottom:4px solid var(--red)}
+#atom-mark{flex-shrink:0;width:48px;height:48px;background:rgba(255,255,255,.08);border-radius:50%;border:1px solid rgba(255,255,255,.15);display:flex;align-items:center;justify-content:center}
+#header-wordmark{flex:1;min-width:0;display:flex;flex-direction:column;justify-content:center}
+#tpc-wordmark-row{display:flex;align-items:baseline;gap:0;line-height:1}.wm-T,.wm-P,.wm-C{font-family:'Orbitron',sans-serif;font-weight:900;font-size:26px;letter-spacing:-1px;line-height:1}.wm-T,.wm-C{color:#fff}.wm-P{color:var(--red)}
+.wm-sep{width:2px;height:20px;background:rgba(255,255,255,.25);margin:0 9px;align-self:center;flex-shrink:0}
+#header-app-name{font-family:'Orbitron',sans-serif;font-size:13px;font-weight:600;color:rgba(255,255,255,.95);letter-spacing:2px;text-transform:uppercase;white-space:nowrap;align-self:center}
+#header-tagline{font-size:10px;color:rgba(255,255,255,.72);letter-spacing:2px;margin-top:4px;text-transform:uppercase}
+#status-pill{display:flex;align-items:center;gap:6px;background:rgba(255,255,255,.10);border:1px solid rgba(255,255,255,.2);border-radius:20px;padding:5px 9px;font-family:'Orbitron',sans-serif;font-size:9px;font-weight:700;letter-spacing:1.4px;color:#fff;white-space:nowrap;flex-shrink:0}
+#status-dot{width:7px;height:7px;border-radius:50%;background:rgba(255,255,255,.3);flex-shrink:0}#status-dot.live{background:#22d3ee;box-shadow:0 0 7px #22d3ee}#status-dot.err{background:#f87171;box-shadow:0 0 7px #f87171}#status-dot.ready{background:#34d399;box-shadow:0 0 7px #34d399}#status-dot.busy{background:#fbbf24;box-shadow:0 0 7px #fbbf24;animation:blink 1s step-start infinite}@keyframes blink{50%{opacity:.25}}
+#banner{position:fixed;left:0;right:0;top:calc(var(--header-h) + var(--safe-top));z-index:90;display:none;background:#fffbeb;border-bottom:2px solid #f59e0b;padding:10px 14px;font-size:12px;color:#78350f;line-height:1.5;gap:8px;align-items:flex-start}#banner.shown{display:flex}#banner.err-banner{background:#fdecea;border-bottom-color:var(--red);color:var(--red)}#banner-text{flex:1}#banner-close{background:none;border:1px solid currentColor;color:inherit;border-radius:4px;padding:1px 7px;cursor:pointer}
+#shell{position:fixed;top:calc(var(--header-h) + var(--safe-top));bottom:0;left:0;right:0;display:flex;flex-direction:column;z-index:1;transition:top .2s}
+#tab-bar{display:flex;height:var(--tab-h);background:var(--surface);border-bottom:1px solid var(--border);flex-shrink:0;box-shadow:0 1px 4px rgba(13,36,97,.06)}
+.tab-btn{flex:1;display:flex;align-items:center;justify-content:center;font-family:'Orbitron',sans-serif;font-size:10px;font-weight:700;letter-spacing:1.2px;color:var(--text-dim);background:none;border:none;cursor:pointer;border-bottom:3px solid transparent;gap:5px;text-transform:uppercase}.tab-btn.active{color:var(--navy);border-bottom-color:var(--navy)}.tab-btn:nth-child(2).active{color:var(--red);border-bottom-color:var(--red)}.tab-btn:nth-child(3).active{color:var(--teal);border-bottom-color:var(--teal)}
+.tab-panel{display:none;flex:1;overflow-y:auto;overflow-x:hidden}.tab-panel.active{display:block}.panel-pad{padding:14px 12px calc(24px + var(--safe-bot))}
+.card{background:var(--surface);border:1px solid var(--border);border-radius:10px;margin-bottom:14px;box-shadow:0 2px 10px rgba(13,36,97,.07);overflow:hidden}.card.navy{border-left:4px solid var(--navy)}.card.red{border-left:4px solid var(--red)}.card.teal{border-left:4px solid var(--teal)}.card.purple{border-left:4px solid var(--purple)}
+.card-h{padding:11px 13px;background:var(--surface2);border-bottom:1px solid var(--border);display:flex;justify-content:space-between;align-items:flex-start;gap:8px}.card-title{font-family:'Orbitron',sans-serif;font-size:12px;font-weight:700;letter-spacing:1.2px;text-transform:uppercase;color:var(--navy)}.card-sub{font-size:11px;color:var(--text-dim);margin-top:3px;line-height:1.4}.card-body{padding:13px}
+.schematic{display:grid;grid-template-columns:auto 1fr auto 1fr auto;align-items:center;gap:6px;padding:14px 10px;min-width:0}.schem-box{background:var(--navy);color:white;border-radius:7px;padding:8px 9px;text-align:center;font-family:'Orbitron',sans-serif;font-size:9px;font-weight:700;line-height:1.4;min-width:72px}.schem-z{background:var(--teal)}.wire{height:3px;background:var(--red);position:relative;min-width:22px}.wire:after{content:'›';position:absolute;right:-2px;top:-12px;color:var(--red);font-size:22px;font-weight:bold}.schem-r{font-family:'Orbitron',sans-serif;font-size:13px;font-weight:700;color:var(--navy);padding:0 2px}.mic-tap{font-size:10px;color:var(--purple);text-align:center;padding:0 12px 12px;line-height:1.45}
+.ctrl-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}.field{min-width:0}.field label{display:block;font-size:10px;color:var(--text-dim);letter-spacing:.7px;margin-bottom:5px;text-transform:uppercase}.field input,.field select{width:100%;border:1px solid var(--border-str);background:#fff;color:var(--navy);border-radius:7px;padding:10px 9px;font-size:16px;outline:none}.field input:focus,.field select:focus{border-color:var(--navy);box-shadow:0 0 0 2px rgba(13,36,97,.08)}
+.range-row{margin-top:12px}.range-top{display:flex;justify-content:space-between;font-size:11px;color:var(--text-mid);margin-bottom:6px}.range-val{font-family:'Orbitron',sans-serif;font-weight:700;color:var(--navy)}input[type=range]{-webkit-appearance:none;width:100%;height:5px;border-radius:3px;background:linear-gradient(90deg,var(--navy) var(--fill,10%),var(--border) var(--fill,10%));outline:none}input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:21px;height:21px;border-radius:50%;background:var(--navy);border:2px solid #fff;box-shadow:0 2px 6px rgba(13,36,97,.35)}
+.actions{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px;margin-top:12px}.btn{min-height:44px;border-radius:8px;border:2px solid var(--border-str);background:#fff;color:var(--text-mid);font-family:'Orbitron',sans-serif;font-size:10px;font-weight:700;letter-spacing:1px;padding:9px 8px;cursor:pointer}.btn.primary{background:var(--navy);border-color:var(--navy);color:#fff}.btn.red{background:var(--red);border-color:var(--red);color:#fff}.btn.teal{background:var(--teal);border-color:var(--teal);color:#fff}.btn:disabled{opacity:.4;cursor:not-allowed}.btn:active:not(:disabled){transform:scale(.98)}
+.progress{height:8px;background:var(--bg);border-radius:4px;overflow:hidden;margin-top:10px;border:1px solid var(--border)}.progress>div{height:100%;width:0;background:var(--navy);transition:width .15s}.progress-label{font-size:10px;color:var(--text-dim);margin-top:5px;text-align:center;min-height:15px}
+.stats{display:grid;grid-template-columns:repeat(4,1fr);gap:7px;margin-bottom:14px}.stat{background:var(--navy);border-radius:8px;padding:9px 5px;text-align:center;color:#fff;min-width:0}.stat:nth-child(3){background:var(--teal)}.stat:nth-child(4){background:var(--red)}.stat-l{font-size:8px;letter-spacing:1px;opacity:.8;text-transform:uppercase;margin-bottom:4px}.stat-v{font-family:'Orbitron',sans-serif;font-size:11px;font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.plot-wrap{padding:10px 12px 4px}.plot{width:100%;height:220px;display:block;background:#f0f4fc;border:1px solid var(--border);border-radius:7px}.plot-footer{display:flex;gap:7px;padding:8px 12px 12px}.btn-mini{flex:1;border:1px solid var(--border-str);background:var(--surface2);color:var(--text-mid);border-radius:6px;padding:8px 4px;font-size:10px;font-family:'Orbitron',sans-serif;font-weight:700;cursor:pointer}
+.note{font-size:11px;line-height:1.65;color:var(--text-mid);background:var(--bg);border-left:4px solid var(--teal);padding:10px 11px;border-radius:6px}.note.warn{border-left-color:#f59e0b;background:#fffbeb;color:#78350f}.note.danger{border-left-color:var(--red);background:#fdecea;color:#8b1e16}.note strong{color:inherit}
+.table-wrap{overflow:auto;border:1px solid var(--border);border-radius:7px;max-height:360px}.data-table{width:100%;border-collapse:collapse;font-size:10px;white-space:nowrap}.data-table th{position:sticky;top:0;background:var(--navy);color:#fff;padding:8px 7px;text-align:right;z-index:1}.data-table th:first-child,.data-table td:first-child{text-align:left}.data-table td{padding:7px;border-bottom:1px solid var(--border);text-align:right;color:var(--text-mid)}.data-table tr:nth-child(even) td{background:#f8faff}
+.settings-section{background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:15px;margin-bottom:14px;box-shadow:0 2px 8px rgba(13,36,97,.06)}.s-title{font-family:'Orbitron',sans-serif;font-size:12px;font-weight:700;letter-spacing:1.2px;color:var(--navy);text-transform:uppercase;margin-bottom:11px}.how{display:flex;gap:9px;margin-bottom:10px;font-size:11px;line-height:1.5}.how:last-child{margin-bottom:0}.how-key{min-width:63px;align-self:flex-start;text-align:center;background:var(--navy);color:#fff;border-radius:5px;padding:4px 6px;font-family:'Orbitron',sans-serif;font-size:9px;font-weight:700}.about-card{background:var(--navy);border-radius:10px;padding:15px;margin-bottom:14px;color:#fff}.about-name{font-family:'Orbitron',sans-serif;font-size:17px;font-weight:900}.about-name span{color:var(--red)}.about-row{font-size:11px;color:rgba(255,255,255,.78);margin-top:7px;line-height:1.5}.about-row strong{color:white}.tpc-footer{text-align:center;padding:8px 0 4px;font-size:10px;color:var(--text-faint);letter-spacing:1.7px;font-family:'Orbitron',sans-serif;text-transform:uppercase}
+#toast{position:fixed;bottom:calc(20px + var(--safe-bot));left:50%;transform:translateX(-50%) translateY(16px);background:var(--navy);color:#fff;border-radius:8px;padding:9px 16px;font-size:11px;z-index:220;opacity:0;transition:.25s;pointer-events:none;box-shadow:0 4px 20px rgba(13,36,97,.35);white-space:nowrap;max-width:90%;overflow:hidden;text-overflow:ellipsis}#toast.show{opacity:1;transform:translateX(-50%) translateY(0)}#toast.err{background:var(--red)}
+@media(max-width:380px){#status-pill{padding:5px 6px;letter-spacing:.8px}#header-app-name{font-size:11px}.wm-sep{margin:0 6px}.ctrl-grid{grid-template-columns:1fr}.stats{grid-template-columns:repeat(2,1fr)}.schematic{grid-template-columns:auto 1fr auto}.schematic .hide-narrow{display:none}.plot{height:200px}}
+</style>
+</head>
+<body>
+<header id="header">
+  <div id="atom-mark"><svg viewBox="0 0 44 44" fill="none" xmlns="http://www.w3.org/2000/svg" width="36" height="36"><ellipse cx="22" cy="22" rx="18" ry="7" stroke="#fff" stroke-width="1.2" transform="rotate(-35 22 22)" opacity=".6"/><ellipse cx="22" cy="22" rx="18" ry="7" stroke="#fff" stroke-width="1.2" transform="rotate(35 22 22)" opacity=".6"/><ellipse cx="22" cy="22" rx="18" ry="7" stroke="rgba(255,255,255,.4)" stroke-width="1.2"/><circle cx="22" cy="22" r="3.2" fill="#c0392b"/><circle cx="22" cy="4.5" r="2.4" fill="#22d3ee"/><circle cx="38" cy="30" r="2" fill="#c0392b"/></svg></div>
+  <div id="header-wordmark"><div id="tpc-wordmark-row"><span class="wm-T">T</span><span class="wm-P">P</span><span class="wm-C">C</span><div class="wm-sep"></div><span id="header-app-name">Impedance Lab</span></div><div id="header-tagline">Discover · Experiment · Inspire</div></div>
+  <div id="status-pill"><div id="status-dot"></div><span id="status-text">OFFLINE</span></div>
+</header>
+<div id="banner"><div id="banner-text"></div><button id="banner-close" type="button">✕</button></div>
+<div id="shell">
+  <div id="tab-bar">
+    <button class="tab-btn active" data-tab="sweep" type="button">⚡ Sweep</button>
+    <button class="tab-btn" data-tab="data" type="button">▦ Data</button>
+    <button class="tab-btn" data-tab="settings" type="button">⚙ Settings</button>
+  </div>
+
+  <section id="sweep-panel" class="tab-panel active panel-pad">
+    <div class="card navy">
+      <div class="card-h"><div><div class="card-title">Series impedance method</div><div class="card-sub">Phone audio output drives Rₛ + sample; microphone senses Vₓ.</div></div></div>
+      <div class="schematic" aria-label="Series impedance circuit schematic">
+        <div class="schem-box">AUDIO<br>OUT</div><div class="wire"></div><div class="schem-r">Rₛ</div><div class="wire"></div><div class="schem-box schem-z">Zₓ<br>SAMPLE</div>
+      </div>
+      <div class="mic-tap">MIC / LINE-IN senses the junction voltage across Zₓ → &nbsp;H = Vₓ/Vₛ&nbsp; → &nbsp;Zₓ = Rₛ·H/(1−H)</div>
+    </div>
+
+    <div class="card teal">
+      <div class="card-h"><div><div class="card-title">Sweep controls</div><div class="card-sub">Logarithmic frequency sweep; sine excitation.</div></div></div>
+      <div class="card-body">
+        <div class="ctrl-grid">
+          <div class="field"><label for="f-start">Start frequency (Hz)</label><input id="f-start" type="number" min="20" max="20000" step="10" value="100"></div>
+          <div class="field"><label for="f-stop">Stop frequency (Hz)</label><input id="f-stop" type="number" min="30" max="20000" step="10" value="10000"></div>
+          <div class="field"><label for="points">Points</label><input id="points" type="number" min="5" max="120" step="1" value="30"></div>
+          <div class="field"><label for="rs-ohm">Reference Rₛ (Ω)</label><input id="rs-ohm" type="number" min="1" max="10000000" step="100" value="10000"></div>
+          <div class="field"><label for="settle-ms">Settle / point (ms)</label><input id="settle-ms" type="number" min="50" max="3000" step="25" value="250"></div>
+          <div class="field"><label for="capture-ms">Capture / point (ms)</label><input id="capture-ms" type="number" min="100" max="5000" step="50" value="500"></div>
+        </div>
+        <div class="range-row"><div class="range-top"><span>Drive level</span><span id="drive-val" class="range-val">10 %</span></div><input id="drive" type="range" min="1" max="50" value="10" step="1"></div>
+        <div id="drive-voltage-line" style="font-size:10px;color:var(--text-dim);margin-top:6px">Estimated output voltage: not calibrated</div>
+        <div class="actions">
+          <button id="connect-btn" class="btn primary" type="button">CONNECT AUDIO</button>
+          <button id="cal-btn" class="btn teal" type="button" disabled>CALIBRATE LOOPBACK</button>
+          <button id="run-btn" class="btn red" type="button" disabled>RUN SAMPLE SWEEP</button>
+          <button id="stop-btn" class="btn" type="button" disabled>STOP</button>
+          <button id="demo-btn" class="btn" type="button">LOAD DEMO</button>
+          <button id="clear-btn" class="btn" type="button">CLEAR DATA</button>
+        </div>
+        <div class="progress"><div id="progress-bar"></div></div><div id="progress-label" class="progress-label">Connect audio to begin.</div>
+      </div>
+    </div>
+
+    <div class="stats">
+      <div class="stat"><div class="stat-l">Frequency</div><div id="stat-f" class="stat-v">—</div></div>
+      <div class="stat"><div class="stat-l">|H|</div><div id="stat-h" class="stat-v">—</div></div>
+      <div class="stat"><div class="stat-l">|Z|</div><div id="stat-z" class="stat-v">—</div></div>
+      <div class="stat"><div class="stat-l">∠Z</div><div id="stat-ph" class="stat-v">—</div></div>
+    </div>
+
+    <div class="card navy"><div class="card-h"><div><div class="card-title">Bode magnitude</div><div class="card-sub">|Zₓ| versus frequency · logarithmic axes</div></div></div><div class="plot-wrap"><canvas id="plot-mag" class="plot"></canvas></div><div class="plot-footer"><button class="btn-mini" data-png="mag" type="button">↓ PNG</button></div></div>
+    <div class="card red"><div class="card-h"><div><div class="card-title">Bode phase</div><div class="card-sub">arg(Zₓ) versus frequency</div></div></div><div class="plot-wrap"><canvas id="plot-phase" class="plot"></canvas></div><div class="plot-footer"><button class="btn-mini" data-png="phase" type="button">↓ PNG</button></div></div>
+    <div class="card teal"><div class="card-h"><div><div class="card-title">Nyquist plot</div><div class="card-sub">−Im(Zₓ) versus Re(Zₓ)</div></div></div><div class="plot-wrap"><canvas id="plot-nyq" class="plot"></canvas></div><div class="plot-footer"><button class="btn-mini" data-png="nyq" type="button">↓ PNG</button></div></div>
+    <div class="tpc-footer">The Physics Club · Smartphone Impedance Response Method</div>
+  </section>
+
+  <section id="data-panel" class="tab-panel panel-pad">
+    <div class="card purple">
+      <div class="card-h"><div><div class="card-title">Collected data</div><div class="card-sub">Calibrated transfer function and calculated complex impedance.</div></div></div>
+      <div class="card-body">
+        <div class="actions" style="margin-top:0;margin-bottom:12px"><button id="export-csv" class="btn primary" type="button">EXPORT CSV</button><button id="export-cal" class="btn" type="button">EXPORT CAL</button></div>
+        <div class="table-wrap"><table class="data-table"><thead><tr><th>f / Hz</th><th>|H|</th><th>∠H / °</th><th>Re Z / Ω</th><th>Im Z / Ω</th><th>|Z| / Ω</th><th>∠Z / °</th><th>Ceff / F</th></tr></thead><tbody id="data-body"><tr><td colspan="8" style="text-align:center;padding:18px">No sample data.</td></tr></tbody></table></div>
+      </div>
+    </div>
+    <div class="note">For a predominantly capacitive sample, the displayed effective capacitance is estimated from <strong>Ceff = −1/(2πf·ImZ)</strong> only when ImZ &lt; 0. Treat it as a diagnostic quantity, not a universal equivalent-circuit fit.</div>
+  </section>
+
+  <section id="settings-panel" class="tab-panel panel-pad">
+    <div class="about-card"><div class="about-name">T<span>P</span>C · Impedance Lab</div><div class="about-row"><strong>Purpose</strong> Smartphone-assisted impedance-response teaching laboratory</div><div class="about-row"><strong>Method</strong> Audio sine source + microphone lock-in detection + loopback calibration</div><div class="about-row"><strong>Plots</strong> Bode magnitude, Bode phase, Nyquist</div></div>
+
+    <div class="settings-section"><div class="s-title">Output calibration</div><div class="ctrl-grid"><div class="field"><label for="fullscale-v">Measured Vrms at 100% app gain</label><input id="fullscale-v" type="number" min="0" max="5" step="0.01" placeholder="optional, e.g. 0.70"></div><div class="field"><label for="sample-label">Sample label</label><input id="sample-label" type="text" maxlength="80" value="Unknown sample"></div></div><div class="note" style="margin-top:10px">The app gain is dimensionless. Enter a measured full-scale RMS output only if you want an estimated excitation voltage shown in the Sweep tab. Impedance calculation itself uses the calibrated voltage ratio.</div></div>
+
+    <div class="settings-section"><div class="s-title">Hardware connection</div>
+      <div class="how"><div class="how-key">OUTPUT</div><div>Use a CTIA TRRS breakout or a USB-C audio interface. Headphone/audio output drives <strong>Rₛ in series with Zₓ</strong>.</div></div>
+      <div class="how"><div class="how-key">MIC</div><div>Sense the junction voltage across Zₓ through a protective AC-coupled attenuator into the microphone/line input.</div></div>
+      <div class="how"><div class="how-key">CAL</div><div>Before a sample sweep, connect the same sensing input to the audio output through the same protection network and run <strong>CALIBRATE LOOPBACK</strong>.</div></div>
+      <div class="how"><div class="how-key">SAMPLE</div><div>Reconnect the sensing input to the Rₛ–Zₓ junction without changing phone volume, adapter, drive level, or wiring gains.</div></div>
+    </div>
+
+    <div class="settings-section"><div class="s-title">Measurement assumptions</div><div class="note warn">A single microphone channel cannot directly observe Vₛ and Vₓ simultaneously. This app therefore uses a sequential complex loopback calibration. It works best when audio-path latency, gain and routing remain stable between calibration and sample sweeps.</div><div class="note danger" style="margin-top:10px"><strong>Safety:</strong> passive low-voltage samples only. Never connect the phone to mains, powered circuits, batteries under test, or unknown external voltages. Protect the microphone input from headphone-level signals with an appropriate attenuator/coupling network.</div></div>
+
+    <div class="settings-section"><div class="s-title">Browser requirements</div><table class="data-table" style="white-space:normal"><tbody><tr><td>Web Audio</td><td id="api-audio">—</td></tr><tr><td>Microphone API</td><td id="api-mic">—</td></tr><tr><td>Secure context</td><td id="api-secure">—</td></tr><tr><td>Audio sample rate</td><td id="api-sr">—</td></tr><tr><td>Input channel count</td><td id="api-ch">—</td></tr></tbody></table></div>
+    <div class="tpc-footer">Prototype v1 · Educational use</div>
+  </section>
+</div>
+<div id="toast"></div>
+<script>
+'use strict';
+const $=id=>document.getElementById(id);
+let toastTimer=null;
+const state={
+  audioCtx:null, osc:null, gain:null, micStream:null, micSource:null, processor:null, silentGain:null,
+  oscStart:0, connected:false, busy:false, stop:false, calibration:[], data:[], activeCapture:null,
+  latest:null, calibrationDrive:null, calibrationRange:null
+};
+const plotIds={mag:'plot-mag',phase:'plot-phase',nyq:'plot-nyq'};
+
+function toast(msg,isErr=false){const el=$('toast');el.textContent=msg;el.className='show'+(isErr?' err':'');clearTimeout(toastTimer);toastTimer=setTimeout(()=>el.className='',2600)}
+function status(type,text){$('status-dot').className=type;$('status-text').textContent=text}
+function showBanner(msg,isErr=false){$('banner-text').textContent=msg;$('banner').className='shown'+(isErr?' err-banner':'');updateShellTop()}
+function dismissBanner(){$('banner').className='';updateShellTop()}
+function updateShellTop(){const h=$('banner').classList.contains('shown')?$('banner').offsetHeight:0;$('shell').style.top=`calc(var(--header-h) + var(--safe-top) + ${h}px)`}
+function sleep(ms){return new Promise(r=>setTimeout(r,ms))}
+function clamp(x,a,b){return Math.max(a,Math.min(b,x))}
+function fmt(v,d=3){if(!Number.isFinite(v))return '—';const a=Math.abs(v);if(a>=1e6)return (v/1e6).toFixed(2)+'M';if(a>=1e3)return (v/1e3).toFixed(2)+'k';if(a>=100)return v.toFixed(0);if(a>=10)return v.toFixed(1);if(a>=1)return v.toFixed(2);if(a>=.01)return v.toFixed(3);return v.toExponential(2)}
+function csvNum(v){return Number.isFinite(v)?String(v):''}
+function cAbs(z){return Math.hypot(z.re,z.im)}
+function cArg(z){return Math.atan2(z.im,z.re)}
+function cDiv(a,b){const d=b.re*b.re+b.im*b.im;if(d<1e-30)return {re:NaN,im:NaN};return {re:(a.re*b.re+a.im*b.im)/d,im:(a.im*b.re-a.re*b.im)/d}}
+function cSub(a,b){return {re:a.re-b.re,im:a.im-b.im}}
+function cScale(a,s){return {re:a.re*s,im:a.im*s}}
+function logspace(a,b,n){const la=Math.log(a),lb=Math.log(b);return Array.from({length:n},(_,i)=>Math.exp(la+(lb-la)*(n===1?0:i/(n-1))))}
+function interpCal(f){
+  const a=state.calibration;if(!a.length)return null;
+  if(f<=a[0].f)return a[0].raw;if(f>=a[a.length-1].f)return a[a.length-1].raw;
+  let hi=a.findIndex(p=>p.f>=f);if(hi<=0)return a[0].raw;const lo=hi-1;
+  const t=(Math.log(f)-Math.log(a[lo].f))/(Math.log(a[hi].f)-Math.log(a[lo].f));
+  return {re:a[lo].raw.re+(a[hi].raw.re-a[lo].raw.re)*t,im:a[lo].raw.im+(a[hi].raw.im-a[lo].raw.im)*t};
+}
+function getSweepConfig(){
+  const f0=clamp(parseFloat($('f-start').value)||100,20,20000),f1=clamp(parseFloat($('f-stop').value)||10000,30,20000);
+  const n=clamp(parseInt($('points').value)||30,5,120),rs=clamp(parseFloat($('rs-ohm').value)||10000,1,1e7);
+  const settle=clamp(parseInt($('settle-ms').value)||250,50,3000),capture=clamp(parseInt($('capture-ms').value)||500,100,5000);
+  if(f1<=f0)throw new Error('Stop frequency must be greater than start frequency.');
+  if(state.audioCtx && f1>state.audioCtx.sampleRate*0.42)throw new Error('Stop frequency is too close to the digital Nyquist limit for this device.');
+  return {f0,f1,n,rs,settle,capture,drive:parseFloat($('drive').value)/100};
+}
+function updateDriveUI(){const v=parseFloat($('drive').value);$('drive-val').textContent=v.toFixed(0)+' %';const min=1,max=50;$('drive').style.setProperty('--fill',((v-min)/(max-min)*100).toFixed(1)+'%');const fs=parseFloat($('fullscale-v').value);$('drive-voltage-line').textContent=Number.isFinite(fs)&&fs>0?`Estimated output voltage ≈ ${(fs*v/100).toFixed(3)} Vrms`:'Estimated output voltage: not calibrated'}
+function switchTab(name){document.querySelectorAll('.tab-btn').forEach(b=>b.classList.toggle('active',b.dataset.tab===name));document.querySelectorAll('.tab-panel').forEach(p=>p.classList.toggle('active',p.id===name+'-panel'));setTimeout(resizePlots,50)}
+function setBusy(b){state.busy=b;$('cal-btn').disabled=!state.connected||b;$('run-btn').disabled=!state.connected||b;$('connect-btn').disabled=b;$('demo-btn').disabled=b;$('clear-btn').disabled=b;$('stop-btn').disabled=!b;status(b?'busy':(state.connected?'ready':''),b?'RUNNING':(state.connected?'READY':'OFFLINE'))}
+function setProgress(frac,msg){$('progress-bar').style.width=(clamp(frac,0,1)*100).toFixed(1)+'%';$('progress-label').textContent=msg}
+
+async function connectAudio(){
+  if(state.connected){toast('Audio already connected');return}
+  if(!navigator.mediaDevices?.getUserMedia){showBanner('Microphone capture is unavailable in this browser. Use a modern browser in a secure context.',true);return}
+  try{
+    setBusy(true);setProgress(.05,'Requesting microphone permission…');
+    const AC=window.AudioContext||window.webkitAudioContext;if(!AC)throw new Error('Web Audio API is unavailable.');
+    const ctx=new AC({latencyHint:'interactive'});await ctx.resume();
+    const stream=await navigator.mediaDevices.getUserMedia({audio:{echoCancellation:false,noiseSuppression:false,autoGainControl:false,channelCount:1},video:false});
+    const src=ctx.createMediaStreamSource(stream);
+    const osc=ctx.createOscillator();osc.type='sine';osc.frequency.value=1000;
+    const gain=ctx.createGain();gain.gain.value=0;
+    osc.connect(gain).connect(ctx.destination);osc.start();
+    const processor=ctx.createScriptProcessor(2048,1,1);
+    const silent=ctx.createGain();silent.gain.value=0;
+    src.connect(processor);processor.connect(silent).connect(ctx.destination);
+    state.audioCtx=ctx;state.micStream=stream;state.micSource=src;state.osc=osc;state.gain=gain;state.processor=processor;state.silentGain=silent;state.oscStart=ctx.currentTime;state.connected=true;
+    processor.onaudioprocess=onAudioProcess;
+    const tr=stream.getAudioTracks()[0],settings=tr?.getSettings?.()||{};
+    $('api-sr').textContent=ctx.sampleRate+' Hz';$('api-ch').textContent=settings.channelCount||'browser default';
+    setProgress(0,'Connected. Run loopback calibration first.');
+    showBanner('Audio connected. Keep the phone/system volume fixed after calibration. Use a protective attenuator on the microphone input.',false);
+    toast('Audio connected');
+  }catch(e){console.error(e);showBanner('Audio connection failed: '+e.message,true);toast('Audio connection failed',true);state.connected=false}
+  finally{setBusy(false)}
+}
+function onAudioProcess(ev){
+  const out=ev.outputBuffer.getChannelData(0);out.fill(0);
+  const cap=state.activeCapture;if(!cap)return;
+  const x=ev.inputBuffer.getChannelData(0);const sr=state.audioCtx.sampleRate;
+  let t0=Number.isFinite(ev.playbackTime)?ev.playbackTime:state.audioCtx.currentTime-x.length/sr;
+  let mean=0;for(let i=0;i<x.length;i++)mean+=x[i];mean/=x.length;
+  for(let i=0;i<x.length && cap.n<cap.targetN;i++){
+    const v=x[i]-mean;const t=t0+i/sr-state.oscStart;const a=2*Math.PI*cap.freq*t;
+    cap.re+=v*Math.cos(a);cap.im-=v*Math.sin(a);cap.sq+=v*v;cap.n++;
+  }
+  if(cap.n>=cap.targetN){
+    const n=cap.n;const result={re:2*cap.re/n,im:2*cap.im/n,rms:Math.sqrt(cap.sq/n),n};
+    state.activeCapture=null;cap.resolve(result);
+  }
+}
+async function captureTone(freq,durationMs){
+  if(!state.connected)throw new Error('Audio not connected.');
+  const sr=state.audioCtx.sampleRate,targetN=Math.max(256,Math.round(sr*durationMs/1000));
+  return new Promise((resolve,reject)=>{state.activeCapture={freq,targetN,n:0,re:0,im:0,sq:0,resolve,reject};setTimeout(()=>{if(state.activeCapture){state.activeCapture=null;reject(new Error('Microphone capture timeout.'))}},durationMs+2500)})
+}
+async function measureRaw(freq,cfg){
+  state.osc.frequency.setTargetAtTime(freq,state.audioCtx.currentTime,.01);
+  state.gain.gain.setTargetAtTime(cfg.drive,state.audioCtx.currentTime,.01);
+  await sleep(cfg.settle);
+  if(state.stop)throw new Error('Stopped');
+  return await captureTone(freq,cfg.capture);
+}
+async function runCalibration(){
+  if(!state.connected)return;
+  if(!confirm('LOOPBACK CALIBRATION\n\nConnect the audio output to the microphone sensing input through the SAME protection/attenuation network used for sample measurements. Keep system volume fixed.\n\nContinue?'))return;
+  try{
+    const cfg=getSweepConfig();state.stop=false;setBusy(true);state.calibration=[];state.calibrationDrive=cfg.drive;state.calibrationRange=[cfg.f0,cfg.f1];$('run-btn').disabled=true;
+    const freqs=logspace(cfg.f0,cfg.f1,cfg.n);state.gain.gain.value=cfg.drive;
+    for(let i=0;i<freqs.length;i++){
+      if(state.stop)throw new Error('Stopped');const f=freqs[i];setProgress(i/freqs.length,`Calibration ${i+1}/${freqs.length} · ${fmt(f)} Hz`);$('stat-f').textContent=fmt(f)+' Hz';
+      const raw=await measureRaw(f,cfg);if(cAbs(raw)<1e-7)throw new Error('Calibration signal is too small. Check wiring and microphone input.');state.calibration.push({f,raw});
+    }
+    localStorage.setItem('tpc_impedance_cal',JSON.stringify({drive:state.calibrationDrive,range:state.calibrationRange,points:state.calibration}));setProgress(1,'Calibration complete. Reconnect microphone sense to the sample junction.');toast('Calibration complete');
+  }catch(e){if(e.message!=='Stopped'){showBanner('Calibration failed: '+e.message,true);toast('Calibration failed',true)}else toast('Calibration stopped')}
+  finally{if(state.gain)state.gain.gain.setTargetAtTime(0,state.audioCtx.currentTime,.01);setBusy(false)}
+}
+function computePoint(f,raw,cal,rs){
+  const H=cDiv(raw,cal);const oneMinus=cSub({re:1,im:0},H);const Z=cScale(cDiv(H,oneMinus),rs);
+  const magH=cAbs(H),phH=cArg(H)*180/Math.PI,magZ=cAbs(Z),phZ=cArg(Z)*180/Math.PI;
+  const ceff=Z.im<0?-1/(2*Math.PI*f*Z.im):NaN;
+  return {f,raw,H,magH,phH,Z,magZ,phZ,ceff};
+}
+async function runSample(){
+  if(!state.calibration.length){toast('Run loopback calibration first',true);return}
+  if(!confirm('SAMPLE SWEEP\n\nReconnect the microphone sensing input to the junction between Rₛ and Zₓ. Do NOT change phone volume, drive level, adapter, or sensing attenuation after calibration.\n\nContinue?'))return;
+  try{
+    const cfg=getSweepConfig();
+    if(state.calibrationDrive!=null && Math.abs(cfg.drive-state.calibrationDrive)>1e-9)throw new Error('Drive level changed after calibration. Restore the calibrated drive level or recalibrate.');
+    if(state.calibrationRange && (cfg.f0<state.calibrationRange[0]*0.999 || cfg.f1>state.calibrationRange[1]*1.001))throw new Error('Requested sweep extends outside the calibrated frequency range. Recalibrate using this range.');
+    state.stop=false;setBusy(true);state.data=[];state.latest=null;renderAll();
+    const freqs=logspace(cfg.f0,cfg.f1,cfg.n);state.gain.gain.value=cfg.drive;
+    for(let i=0;i<freqs.length;i++){
+      if(state.stop)throw new Error('Stopped');const f=freqs[i];setProgress(i/freqs.length,`Sample ${i+1}/${freqs.length} · ${fmt(f)} Hz`);$('stat-f').textContent=fmt(f)+' Hz';
+      const raw=await measureRaw(f,cfg),cal=interpCal(f);if(!cal)throw new Error('Calibration unavailable at this frequency.');const p=computePoint(f,raw,cal,cfg.rs);
+      if(!Number.isFinite(p.magZ)||p.magZ>1e10)throw new Error('Unstable impedance result. H is too close to 1 or signal is saturated/noisy.');state.data.push(p);state.latest=p;updateStats();renderAll();
+    }
+    setProgress(1,`Sweep complete · ${state.data.length} points`);toast('Sample sweep complete');
+  }catch(e){if(e.message!=='Stopped'){showBanner('Sweep failed: '+e.message,true);toast('Sweep failed',true)}else toast('Sweep stopped')}
+  finally{if(state.gain)state.gain.gain.setTargetAtTime(0,state.audioCtx.currentTime,.01);setBusy(false);renderAll()}
+}
+function stopSweep(){state.stop=true;if(state.activeCapture){state.activeCapture.reject(new Error('Stopped'));state.activeCapture=null}if(state.gain&&state.audioCtx)state.gain.gain.setTargetAtTime(0,state.audioCtx.currentTime,.01);setProgress(0,'Stopping…')}
+function clearData(){if(state.busy)return;state.data=[];state.latest=null;renderAll();updateStats();setProgress(0,state.calibration.length?'Calibration retained. Ready for sample sweep.':'No sample data.');toast('Sample data cleared')}
+function loadDemo(){
+  if(state.busy)return;const cfg=getSweepConfig();const freqs=logspace(cfg.f0,cfg.f1,cfg.n),R=10000,C=100e-9;state.data=[];
+  for(const f of freqs){const w=2*Math.PI*f;const den=1+(w*R*C)**2;const Z={re:R/den,im:-R*w*R*C/den};const H=cDiv(Z,{re:cfg.rs+Z.re,im:Z.im});const ceff=Z.im<0?-1/(2*Math.PI*f*Z.im):NaN;state.data.push({f,raw:H,H,magH:cAbs(H),phH:cArg(H)*180/Math.PI,Z,magZ:cAbs(Z),phZ:cArg(Z)*180/Math.PI,ceff})}
+  state.latest=state.data[state.data.length-1];renderAll();updateStats();setProgress(1,'Demo loaded: 10 kΩ || 100 nF sample model.');toast('Demo data loaded')
+}
+function updateStats(){const p=state.latest;$('stat-f').textContent=p?fmt(p.f)+' Hz':'—';$('stat-h').textContent=p?fmt(p.magH):'—';$('stat-z').textContent=p?fmt(p.magZ)+'Ω':'—';$('stat-ph').textContent=p?fmt(p.phZ,1)+'°':'—'}
+function renderAll(){renderTable();drawPlots()}
+function renderTable(){const tb=$('data-body');if(!state.data.length){tb.innerHTML='<tr><td colspan="8" style="text-align:center;padding:18px">No sample data.</td></tr>';return}tb.innerHTML=state.data.map(p=>`<tr><td>${p.f.toFixed(3)}</td><td>${p.magH.toFixed(6)}</td><td>${p.phH.toFixed(3)}</td><td>${p.Z.re.toFixed(6)}</td><td>${p.Z.im.toFixed(6)}</td><td>${p.magZ.toFixed(6)}</td><td>${p.phZ.toFixed(3)}</td><td>${Number.isFinite(p.ceff)?p.ceff.toExponential(6):''}</td></tr>`).join('')}
+function resizePlots(){Object.values(plotIds).forEach(id=>{const c=$(id);const pr=window.devicePixelRatio||1;c.width=Math.max(10,Math.round(c.clientWidth*pr));c.height=Math.max(10,Math.round(c.clientHeight*pr))});drawPlots()}
+function niceTicks(min,max,count=5){if(!Number.isFinite(min)||!Number.isFinite(max)||min===max)return[min||0];const span=max-min,rough=span/count,mag=10**Math.floor(Math.log10(Math.abs(rough))),norm=rough/mag,nice=norm<1.5?1:norm<3.5?2:norm<7.5?5:10,step=nice*mag,start=Math.ceil(min/step)*step,out=[];for(let t=start;t<=max+step*.01;t+=step){out.push(+t.toFixed(12));if(out.length>20)break}return out}
+function prepCanvas(id){const c=$(id),ctx=c.getContext('2d'),pr=window.devicePixelRatio||1,W=c.width,H=c.height;ctx.clearRect(0,0,W,H);ctx.fillStyle='#f0f4fc';ctx.fillRect(0,0,W,H);return {c,ctx,pr,W,H}}
+function drawEmpty(o,msg='No data — run a sweep or load demo'){o.ctx.fillStyle='#4a6a9a';o.ctx.font=`bold ${11*o.pr}px "Share Tech Mono"`;o.ctx.textAlign='center';o.ctx.fillText(msg,o.W/2,o.H/2)}
+function drawPlots(){drawBodeMag();drawBodePhase();drawNyq()}
+function drawBodeMag(){
+  const o=prepCanvas('plot-mag');if(!state.data.length)return drawEmpty(o);const {ctx,pr,W,H}=o,ml=58*pr,mr=14*pr,mt=14*pr,mb=34*pr,pw=W-ml-mr,ph=H-mt-mb;
+  const xs=state.data.map(p=>Math.log10(p.f)),ys=state.data.map(p=>Math.log10(Math.max(p.magZ,1e-12)));let xmin=Math.min(...xs),xmax=Math.max(...xs),ymin=Math.floor(Math.min(...ys)),ymax=Math.ceil(Math.max(...ys));if(ymax===ymin)ymax=ymin+1;
+  const tx=x=>ml+(x-xmin)/(xmax-xmin||1)*pw,ty=y=>mt+(1-(y-ymin)/(ymax-ymin||1))*ph;
+  ctx.strokeStyle='rgba(100,130,190,.35)';ctx.lineWidth=.7*pr;for(let k=Math.ceil(xmin);k<=Math.floor(xmax);k++){const x=tx(k);ctx.beginPath();ctx.moveTo(x,mt);ctx.lineTo(x,mt+ph);ctx.stroke();ctx.fillStyle='#2a4a80';ctx.font=`bold ${8*pr}px "Share Tech Mono"`;ctx.textAlign='center';ctx.fillText('10^'+k,x,mt+ph+18*pr)}
+  for(let k=ymin;k<=ymax;k++){const y=ty(k);ctx.beginPath();ctx.moveTo(ml,y);ctx.lineTo(ml+pw,y);ctx.stroke();ctx.fillStyle='#2a4a80';ctx.textAlign='right';ctx.fillText('10^'+k,ml-6*pr,y+3*pr)}
+  ctx.strokeStyle='#0d2461';ctx.lineWidth=2.2*pr;ctx.beginPath();state.data.forEach((p,i)=>{const x=tx(Math.log10(p.f)),y=ty(Math.log10(Math.max(p.magZ,1e-12)));i?ctx.lineTo(x,y):ctx.moveTo(x,y)});ctx.stroke();
+  ctx.fillStyle='#0d2461';ctx.font=`bold ${9*pr}px "Share Tech Mono"`;ctx.textAlign='center';ctx.fillText('frequency / Hz',ml+pw/2,H-7*pr);ctx.save();ctx.translate(12*pr,mt+ph/2);ctx.rotate(-Math.PI/2);ctx.fillText('|Z| / Ω',0,0);ctx.restore();ctx.strokeStyle='rgba(13,36,97,.2)';ctx.strokeRect(ml,mt,pw,ph)
+}
+function drawBodePhase(){
+  const o=prepCanvas('plot-phase');if(!state.data.length)return drawEmpty(o);const {ctx,pr,W,H}=o,ml=56*pr,mr=14*pr,mt=14*pr,mb=34*pr,pw=W-ml-mr,ph=H-mt-mb;
+  const xs=state.data.map(p=>Math.log10(p.f)),ys=state.data.map(p=>p.phZ);let xmin=Math.min(...xs),xmax=Math.max(...xs),ymin=Math.max(-180,Math.floor((Math.min(...ys)-10)/30)*30),ymax=Math.min(180,Math.ceil((Math.max(...ys)+10)/30)*30);if(ymax<=ymin){ymin=-90;ymax=90}
+  const tx=x=>ml+(x-xmin)/(xmax-xmin||1)*pw,ty=y=>mt+(1-(y-ymin)/(ymax-ymin))*ph;
+  ctx.strokeStyle='rgba(100,130,190,.35)';ctx.lineWidth=.7*pr;for(let k=Math.ceil(xmin);k<=Math.floor(xmax);k++){const x=tx(k);ctx.beginPath();ctx.moveTo(x,mt);ctx.lineTo(x,mt+ph);ctx.stroke();ctx.fillStyle='#2a4a80';ctx.font=`bold ${8*pr}px "Share Tech Mono"`;ctx.textAlign='center';ctx.fillText('10^'+k,x,mt+ph+18*pr)}
+  niceTicks(ymin,ymax,5).forEach(v=>{const y=ty(v);ctx.beginPath();ctx.moveTo(ml,y);ctx.lineTo(ml+pw,y);ctx.stroke();ctx.fillStyle='#2a4a80';ctx.textAlign='right';ctx.fillText(v.toFixed(0)+'°',ml-6*pr,y+3*pr)});
+  ctx.strokeStyle='#c0392b';ctx.lineWidth=2.2*pr;ctx.beginPath();state.data.forEach((p,i)=>{const x=tx(Math.log10(p.f)),y=ty(p.phZ);i?ctx.lineTo(x,y):ctx.moveTo(x,y)});ctx.stroke();ctx.fillStyle='#0d2461';ctx.font=`bold ${9*pr}px "Share Tech Mono"`;ctx.textAlign='center';ctx.fillText('frequency / Hz',ml+pw/2,H-7*pr);ctx.save();ctx.translate(12*pr,mt+ph/2);ctx.rotate(-Math.PI/2);ctx.fillText('phase(Z) / deg',0,0);ctx.restore();ctx.strokeStyle='rgba(13,36,97,.2)';ctx.strokeRect(ml,mt,pw,ph)
+}
+function drawNyq(){
+  const o=prepCanvas('plot-nyq');if(!state.data.length)return drawEmpty(o);const {ctx,pr,W,H}=o,ml=58*pr,mr=14*pr,mt=14*pr,mb=34*pr,pw=W-ml-mr,ph=H-mt-mb;
+  const xs=state.data.map(p=>p.Z.re),ys=state.data.map(p=>-p.Z.im);let xmin=Math.min(0,...xs),xmax=Math.max(...xs),ymin=Math.min(0,...ys),ymax=Math.max(...ys);if(xmax===xmin)xmax=xmin+1;if(ymax===ymin)ymax=ymin+1;const xp=(xmax-xmin)*.08||1,yp=(ymax-ymin)*.08||1;xmin-=xp;xmax+=xp;ymin-=yp;ymax+=yp;
+  const tx=x=>ml+(x-xmin)/(xmax-xmin)*pw,ty=y=>mt+(1-(y-ymin)/(ymax-ymin))*ph;
+  ctx.strokeStyle='rgba(100,130,190,.35)';ctx.lineWidth=.7*pr;niceTicks(xmin,xmax,5).forEach(v=>{const x=tx(v);ctx.beginPath();ctx.moveTo(x,mt);ctx.lineTo(x,mt+ph);ctx.stroke();ctx.fillStyle='#2a4a80';ctx.font=`bold ${8*pr}px "Share Tech Mono"`;ctx.textAlign='center';ctx.fillText(fmt(v),x,mt+ph+18*pr)});niceTicks(ymin,ymax,5).forEach(v=>{const y=ty(v);ctx.beginPath();ctx.moveTo(ml,y);ctx.lineTo(ml+pw,y);ctx.stroke();ctx.fillStyle='#2a4a80';ctx.textAlign='right';ctx.fillText(fmt(v),ml-6*pr,y+3*pr)});
+  ctx.strokeStyle='#0778a0';ctx.lineWidth=2.2*pr;ctx.beginPath();state.data.forEach((p,i)=>{const x=tx(p.Z.re),y=ty(-p.Z.im);i?ctx.lineTo(x,y):ctx.moveTo(x,y)});ctx.stroke();ctx.fillStyle='#0778a0';state.data.forEach(p=>{ctx.beginPath();ctx.arc(tx(p.Z.re),ty(-p.Z.im),2.2*pr,0,Math.PI*2);ctx.fill()});ctx.fillStyle='#0d2461';ctx.font=`bold ${9*pr}px "Share Tech Mono"`;ctx.textAlign='center';ctx.fillText('Re(Z) / Ω',ml+pw/2,H-7*pr);ctx.save();ctx.translate(12*pr,mt+ph/2);ctx.rotate(-Math.PI/2);ctx.fillText('−Im(Z) / Ω',0,0);ctx.restore();ctx.strokeStyle='rgba(13,36,97,.2)';ctx.strokeRect(ml,mt,pw,ph)
+}
+function exportCSV(){if(!state.data.length)return toast('No sample data to export',true);const label=$('sample-label').value.trim()||'Unknown sample',rs=parseFloat($('rs-ohm').value)||0;const head=['sample','Rs_ohm','frequency_Hz','H_mag','H_phase_deg','Z_real_ohm','Z_imag_ohm','Z_mag_ohm','Z_phase_deg','Ceff_F'];const rows=state.data.map(p=>[JSON.stringify(label),rs,p.f,p.magH,p.phH,p.Z.re,p.Z.im,p.magZ,p.phZ,Number.isFinite(p.ceff)?p.ceff:''].join(','));downloadBlob(`TPC_impedance_${Date.now()}.csv`,[head.join(','),...rows].join('\n'),'text/csv');toast('CSV saved')}
+function exportCalibration(){if(!state.calibration.length)return toast('No calibration to export',true);const obj={created:new Date().toISOString(),drive_percent:state.calibrationDrive!=null?state.calibrationDrive*100:parseFloat($('drive').value),frequency_range_Hz:state.calibrationRange,points:state.calibration.map(p=>({frequency_Hz:p.f,re:p.raw.re,im:p.raw.im,rms:p.raw.rms}))};downloadBlob(`TPC_impedance_cal_${Date.now()}.json`,JSON.stringify(obj,null,2),'application/json');toast('Calibration saved')}
+function downloadBlob(name,text,type){const a=document.createElement('a');a.href=URL.createObjectURL(new Blob([text],{type}));a.download=name;a.click();setTimeout(()=>URL.revokeObjectURL(a.href),1000)}
+function exportPNG(kind){if(!state.data.length)return toast('No plot data',true);const src=$(plotIds[kind]),off=document.createElement('canvas'),pr=1;off.width=1000;off.height=520;const ctx=off.getContext('2d');ctx.fillStyle='#fff';ctx.fillRect(0,0,off.width,off.height);ctx.fillStyle='#0d2461';ctx.fillRect(0,0,off.width,44);ctx.fillStyle='#c0392b';ctx.fillRect(0,41,off.width,3);ctx.fillStyle='#fff';ctx.font='bold 16px monospace';ctx.fillText('TPC · Impedance Lab · '+kind.toUpperCase(),18,28);ctx.drawImage(src,30,70,940,410);const a=document.createElement('a');a.href=off.toDataURL('image/png');a.download=`TPC_impedance_${kind}_${Date.now()}.png`;a.click();toast('PNG saved')}
+function featureStatus(){const AC=window.AudioContext||window.webkitAudioContext;$('api-audio').textContent=AC?'Available':'Unavailable';$('api-mic').textContent=navigator.mediaDevices?.getUserMedia?'Available':'Unavailable';$('api-secure').textContent=window.isSecureContext?'Yes':'No / file context';if(!window.isSecureContext && location.protocol!=='file:')showBanner('Microphone access normally requires HTTPS. Open this app from an HTTPS site or localhost.',true)}
+function restoreCalibration(){try{const x=JSON.parse(localStorage.getItem('tpc_impedance_cal')||'null');if(Array.isArray(x)&&x.length>2){state.calibration=x;state.calibrationDrive=null;state.calibrationRange=[x[0].f,x[x.length-1].f];setProgress(0,'Legacy saved calibration found. Recalibrate whenever hardware/volume changes.')}else if(x&&Array.isArray(x.points)&&x.points.length>2){state.calibration=x.points;state.calibrationDrive=Number.isFinite(x.drive)?x.drive:null;state.calibrationRange=Array.isArray(x.range)?x.range:[x.points[0].f,x.points[x.points.length-1].f];if(state.calibrationDrive!=null){$('drive').value=String(Math.round(state.calibrationDrive*100));updateDriveUI()}setProgress(0,'Saved calibration found. Recalibrate whenever hardware/volume changes.')}}catch(_){} }
+function init(){
+  featureStatus();restoreCalibration();updateDriveUI();status('', 'OFFLINE');
+  document.querySelectorAll('.tab-btn').forEach(b=>b.addEventListener('click',()=>switchTab(b.dataset.tab)));
+  $('banner-close').addEventListener('click',dismissBanner);$('drive').addEventListener('input',updateDriveUI);$('fullscale-v').addEventListener('input',updateDriveUI);
+  $('connect-btn').addEventListener('click',connectAudio);$('cal-btn').addEventListener('click',runCalibration);$('run-btn').addEventListener('click',runSample);$('stop-btn').addEventListener('click',stopSweep);$('demo-btn').addEventListener('click',loadDemo);$('clear-btn').addEventListener('click',clearData);$('export-csv').addEventListener('click',exportCSV);$('export-cal').addEventListener('click',exportCalibration);document.querySelectorAll('[data-png]').forEach(b=>b.addEventListener('click',()=>exportPNG(b.dataset.png)));
+  window.addEventListener('resize',resizePlots);setTimeout(resizePlots,100);setTimeout(resizePlots,500);
+}
+window.addEventListener('load',init);
+</script>
+</body>
+</html>
